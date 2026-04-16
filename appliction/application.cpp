@@ -18,14 +18,11 @@ Application::Application()
 	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
-	_window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN);
+	_window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _width, _height, SDL_WINDOW_SHOWN);
 	init_assert(_window, u8"SDL_CreateWindow Error");
 
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE);//硬件加速 垂直同步 目标纹理
 	init_assert(_renderer, u8"SDL_CreateRenderer Error");
-
-	_board = new Board();
-	_button_manager = new ButtonManager();
 }
 
 Application::~Application()
@@ -93,14 +90,60 @@ void Application::on_render()
 
 void Application::on_update(double delta)
 {
-	_board->on_update(delta);
+	_board->on_update(delta,_current_input);
 	_button_manager->on_update(delta);
 }
 
 void Application::init()
 {
-	_board->init(_renderer);
-	_button_manager->add_button(Button(_renderer, { 10,10,30,30 }));
+	_board = new Board();
+	_button_manager = new ButtonManager();
 
+	_board->init(_renderer);
+
+	Button* tmp;
+
+	tmp = _button_manager->add_button(Button(_renderer, { 900,20,70,50 }));
+	tmp->set_on_click([&] {
+		std::cout << "start point " << std::endl;
+		_current_input = InPutType::Start;
+		});	
+	
+	tmp = _button_manager->add_button(Button(_renderer, { 980,20,70,50 }));
+	tmp->set_on_click([&] {
+		std::cout << "end point " << std::endl;
+		_current_input = InPutType::Goal;
+		});	
+
+	tmp = _button_manager->add_button(Button(_renderer, { 900,80,70,50 }));
+	tmp->set_on_click([&] {
+		std::cout << "wall " << std::endl;
+		_current_input = InPutType::Wall;
+
+		});
+
+	tmp = _button_manager->add_button(Button(_renderer, { 980,80,70,50 }));
+	tmp->set_on_click([&] {
+		std::cout << "blank " << std::endl;
+		_current_input = InPutType::Empty;
+		});
+
+
+
+	tmp = _button_manager->add_button(Button(_renderer, { 900,150,150,50 }));
+	tmp->set_on_click([] {
+		std::cout << "start " << std::endl;
+		});
+
+	tmp = _button_manager->add_button(Button(_renderer, { 900,220,150,50 }));
+	tmp->set_on_click([this] {
+		std::cout << "reset " << std::endl;
+		_board->reset();
+		});
+
+	tmp = _button_manager->add_button(Button(_renderer, { 900,500,150,50 }));
+	tmp->set_on_click([this] {
+		_is_dev_mod ? _is_dev_mod = false : _is_dev_mod = true;
+		});
 }
 

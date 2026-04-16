@@ -38,11 +38,11 @@ void ButtonManager::on_render(SDL_Renderer* renderer)
     }
 }
 
-Button& ButtonManager::add_button(Button button)
+Button* ButtonManager::add_button(Button button)
 {
     _buttons.emplace_back(std::move(button));
 
-    return _buttons.back();
+    return &(_buttons.back());
 }
 
 void ButtonManager::clear()

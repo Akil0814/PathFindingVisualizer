@@ -21,7 +21,7 @@ add_subdirectory(algorithm)
 add_subdirectory(Aframework)
 
 #本工程所有cpp文件编译链接，生成exe
-add_executable(PathFindingVisualizer "main.cpp" )
+add_executable(PathFindingVisualizer "main.cpp"  "status.h")
 
 target_link_libraries(PathFindingVisualizer 
     applicationLib algorithmLib AframeworkLib 

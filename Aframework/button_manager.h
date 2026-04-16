@@ -14,7 +14,7 @@ public:
     void on_update(float dt);
     void on_render(SDL_Renderer* renderer);
 
-    Button& add_button(Button button);
+    Button* add_button(Button button);
 
     template <typename... Args>
     Button& emplace_button(Args&&... args)

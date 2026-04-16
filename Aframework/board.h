@@ -2,6 +2,7 @@
 #include<vector>
 #include <SDL.h>
 
+#include"../status.h"
 #include "tile.h"
 
 class Board
@@ -15,9 +16,10 @@ public:
 	void init(SDL_Renderer* renderer);
 
 	void on_render(SDL_Renderer* renderer);
-	void on_update(double delta);
+	void on_update(double delta,InPutType input);
 	void on_input(const SDL_Event& event);
 
+	void reset();
 
 	void set_size(int row, int col);
 	void set_board_pos(SDL_Point point);
@@ -39,15 +41,21 @@ private:
 	bool _move_in_board = false;
 	bool _click_in_board = false;
 
-	int _index_x = 0;
-	int _index_y = 0;
+	bool _on_process = false;
+
+	int _index_x = -1;
+	int _index_y = -1;
 
 	int _row = 20;
 	int _col = 20;
 
 	TileBoard _board;
+	InPutType _current_input = InPutType::Empty;
 
-	SDL_Point _board_render_pos = { 0 };
-	SDL_Point _mouse_pos = { 0 };
-	SDL_Point _mouse_click_tile_center = { 0 };
+	SDL_Point _start_pos_index = { -1, -1 };
+	SDL_Point _end_pos_index = { -1, -1 };
+
+	SDL_Point _board_render_pos = { 0, 0 };
+	SDL_Point _mouse_pos = { 0, 0 };
+	SDL_Point _mouse_click_tile_center = { 0, 0 };
 };

@@ -4,6 +4,7 @@ Pathfinder::Pathfinder()
 {
 
 }
+
 Pathfinder::~Pathfinder()
 {
 

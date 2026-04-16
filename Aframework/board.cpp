@@ -6,7 +6,8 @@ SDL_Texture* Board::tile_select = nullptr;
 
 Board::Board()
 {
-    _board_render_pos.x = 250;
+    _board.assign(_row, std::vector<Tile>(_col));
+    _board_render_pos.x = 200;
     _board_render_pos.y = 20;
 }
 
@@ -15,6 +16,24 @@ Board::~Board()
 
 
 }
+
+void Board::reset()
+{
+    _board.assign(_row, std::vector<Tile>(_col));
+
+    _move_in_board = false;
+    _click_in_board = false;
+    _on_process = false;
+
+    _index_x = -1;
+    _index_y = -1;
+
+    _start_pos_index = { -1, -1 };
+    _end_pos_index = { -1, -1 };
+
+    _mouse_click_tile_center = { 0, 0 };
+}
+
 
 void Board::init(SDL_Renderer* renderer)
 {
@@ -46,13 +65,64 @@ void Board::init(SDL_Renderer* renderer)
 
 void Board::on_render(SDL_Renderer* renderer)
 {
-	draw_board(renderer);
+    draw_board(renderer);
     draw_mouse_pos_tile(renderer, _mouse_pos);
+
+    for (int y = 0; y < _row; ++y)
+    {
+        for (int x = 0; x < _col; ++x)
+        {
+            Tile::Status status = _board[y][x].get_status();
+
+            if (status == Tile::Status::Empty)
+                continue;
+
+            SDL_Rect rect =
+            {
+                _board_render_pos.x + x * SIZE_TILE + 2,
+                _board_render_pos.y + y * SIZE_TILE + 2,
+                SIZE_TILE - 4,
+                SIZE_TILE - 4
+            };
+
+            switch (status)
+            {
+            case Tile::Status::Wall:
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);       // black
+                break;
+
+            case Tile::Status::Start:
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);     // red
+                break;
+
+            case Tile::Status::Goal:
+                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);     // green
+                break;
+
+            case Tile::Status::Open:
+                SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);   // cyan
+                break;
+
+            case Tile::Status::Closed:
+                SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);   // orange
+                break;
+
+            case Tile::Status::Path:
+                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);     // blue
+                break;
+
+            default:
+                continue;
+            }
+
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
 }
 
-void Board::on_update(double delta)
+void Board::on_update(double delta, InPutType input)
 {
-
+    _current_input = input;
 }
 
 void Board::on_input(const SDL_Event& event)
@@ -61,11 +131,11 @@ void Board::on_input(const SDL_Event& event)
     on_mouse_click(event);
 }
 
-
 void Board::set_size(int row, int col)
 {
 
-	}
+}
+
 void Board::set_board_pos(SDL_Point point)
 {
 
@@ -79,7 +149,6 @@ bool Board::is_inside(int x, int y) const
         && y < _board_render_pos.y + _row * SIZE_TILE;
 
 }
-
 
 void Board::draw_board(SDL_Renderer* renderer)
 {
@@ -120,28 +189,130 @@ void Board::draw_board(SDL_Renderer* renderer)
 
 void Board::on_mouse_click(const SDL_Event& event)
 {
+    if (_on_process)
+        return;
 
+    int mouse_x = 0;
+    int mouse_y = 0;
+    bool should_paint = false;
+
+    switch (event.type)
+    {
+    case SDL_MOUSEBUTTONDOWN:
+        if (event.button.button == SDL_BUTTON_LEFT)
+        {
+            mouse_x = event.button.x;
+            mouse_y = event.button.y;
+            should_paint = true;
+        }
+        break;
+
+    case SDL_MOUSEMOTION:
+        if (event.motion.state & SDL_BUTTON_LMASK)
+        {
+            mouse_x = event.motion.x;
+            mouse_y = event.motion.y;
+            should_paint = true;
+        }
+        break;
+
+    default:
+        return;
+    }
+
+    if (!should_paint || !is_inside(mouse_x, mouse_y))
+        return;
+
+    int x = (mouse_x - _board_render_pos.x) / SIZE_TILE;
+    int y = (mouse_y - _board_render_pos.y) / SIZE_TILE;
+
+    if (x < 0 || x >= _col || y < 0 || y >= _row)
+        return;
+
+    _index_x = x;
+    _index_y = y;
+
+    _mouse_click_tile_center =
+    {
+        _board_render_pos.x + x * SIZE_TILE + SIZE_TILE / 2,
+        _board_render_pos.y + y * SIZE_TILE + SIZE_TILE / 2
+    };
+
+    auto& tile = _board[y][x];
+
+    switch (_current_input)
+    {
+    case InPutType::Empty:
+        if (_start_pos_index.x == x && _start_pos_index.y == y)
+            _start_pos_index = { -1, -1 };
+
+        if (_end_pos_index.x == x && _end_pos_index.y == y)
+            _end_pos_index = { -1, -1 };
+
+        tile.change_status(Tile::Status::Empty);
+        break;
+
+    case InPutType::Wall:
+        if (_start_pos_index.x == x && _start_pos_index.y == y)
+            _start_pos_index = { -1, -1 };
+
+        if (_end_pos_index.x == x && _end_pos_index.y == y)
+            _end_pos_index = { -1, -1 };
+
+        tile.change_status(Tile::Status::Wall);
+        break;
+
+    case InPutType::Start:
+        if (_end_pos_index.x == x && _end_pos_index.y == y)
+            _end_pos_index = { -1, -1 };
+
+        if (_start_pos_index.x >= 0 && _start_pos_index.y >= 0 &&
+            !(_start_pos_index.x == x && _start_pos_index.y == y))
+        {
+            _board[_start_pos_index.y][_start_pos_index.x].change_status(Tile::Status::Empty);
+        }
+
+        _start_pos_index = { x, y };
+        tile.change_status(Tile::Status::Start);
+        break;
+
+    case InPutType::Goal:
+        if (_start_pos_index.x == x && _start_pos_index.y == y)
+            _start_pos_index = { -1, -1 };
+
+        if (_end_pos_index.x >= 0 && _end_pos_index.y >= 0 &&
+            !(_end_pos_index.x == x && _end_pos_index.y == y))
+        {
+            _board[_end_pos_index.y][_end_pos_index.x].change_status(Tile::Status::Empty);
+        }
+
+        _end_pos_index = { x, y };
+        tile.change_status(Tile::Status::Goal);
+        break;
+
+    default:
+        break;
+    }
 }
 
 void Board::on_mouse_move(const SDL_Event& event)
 {
+    if (event.type != SDL_MOUSEMOTION)
+        return;
+
     if (is_inside(event.motion.x, event.motion.y))
     {
         _move_in_board = true;
         _mouse_pos.x = event.motion.x;
         _mouse_pos.y = event.motion.y;
-        SDL_ShowCursor(SDL_DISABLE);
     }
     else
-    {
         _move_in_board = false;
-        SDL_ShowCursor(SDL_ENABLE);
-    }
 }
 
 void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
 {
-    if (!_move_in_board)
+    if (!_move_in_board || tile_select == nullptr)
         return;
 
     SDL_Point grid_pos = { 0 };
@@ -161,8 +332,12 @@ void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
             (pos.y - _board_render_pos.y) / SIZE_TILE
         };
     }
-    SDL_Rect rect;
-
+    SDL_Rect rect =
+    {
+        _board_render_pos.x + grid_pos.x * SIZE_TILE,
+        _board_render_pos.y + grid_pos.y * SIZE_TILE,
+        SIZE_TILE,
+        SIZE_TILE
+    };
     SDL_RenderCopy(renderer, tile_select, nullptr, &rect);
-    SDL_RenderFillRect(renderer, &rect);
 }

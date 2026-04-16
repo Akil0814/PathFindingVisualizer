@@ -1,5 +1,6 @@
 #pragma once
 #include<SDL.h>
+#include "../status.h"
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
 
@@ -15,7 +16,6 @@ private:
 	void init();
 
 	void on_render();
-
 	void on_update(double delta);
 	void on_input();
 
@@ -38,7 +38,11 @@ private:
 private:
 	static Application* _instance;
 
+	InPutType _current_input = InPutType::Empty;
+	Algorithm _current_algorithm = Algorithm::AStart;
+
 	bool _active = { true };
+	bool _is_dev_mod = { false };
 
 	int _width = 1080;
 	int _height = 720;
