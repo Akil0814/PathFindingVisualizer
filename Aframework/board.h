@@ -1,0 +1,53 @@
+#pragma once
+#include<vector>
+#include <SDL.h>
+
+#include "tile.h"
+
+class Board
+{
+	typedef std::vector<std::vector<Tile>> TileBoard;
+
+public:
+	Board();
+	~Board();
+
+	void init(SDL_Renderer* renderer);
+
+	void on_render(SDL_Renderer* renderer);
+	void on_update(double delta);
+	void on_input(const SDL_Event& event);
+
+
+	void set_size(int row, int col);
+	void set_board_pos(SDL_Point point);
+
+	bool is_inside(int x, int y) const;
+
+private:
+
+	void draw_board(SDL_Renderer* renderer);
+	void draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos);
+
+	void on_mouse_click(const SDL_Event& event);
+	void on_mouse_move(const SDL_Event& event);
+
+private:
+	static SDL_Texture* tile_select;
+
+private:
+	bool _move_in_board = false;
+	bool _click_in_board = false;
+
+	int _index_x = 0;
+	int _index_y = 0;
+
+	int _row = 20;
+	int _col = 20;
+
+	TileBoard _board;
+
+	SDL_Point _board_render_pos = { 0 };
+	SDL_Point _mouse_pos = { 0 };
+	SDL_Point _mouse_click_tile_center = { 0 };
+};
