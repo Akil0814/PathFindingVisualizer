@@ -1,5 +1,6 @@
 #pragma once
 #include<SDL.h>
+#include <SDL_ttf.h>
 #include "../status.h"
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
@@ -18,6 +19,8 @@ private:
 	void on_render();
 	void on_update(double delta);
 	void on_input();
+
+	void rend_imgui();
 
 	void init_assert(bool flag, const char* err_msg)
 	{
@@ -52,6 +55,7 @@ private:
 
 	SDL_Window* _window = nullptr;
 	SDL_Renderer* _renderer = nullptr;
+	TTF_Font* _button_font = nullptr;
 
 	SDL_Color back_ground_color = { 175,175,175,255 };
 };
