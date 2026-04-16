@@ -34,6 +34,11 @@ void Board::reset()
     _mouse_click_tile_center = { 0, 0 };
 }
 
+void Board::clear_path_data()
+{
+
+}
+
 
 void Board::init(SDL_Renderer* renderer)
 {

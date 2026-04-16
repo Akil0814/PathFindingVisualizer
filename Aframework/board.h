@@ -20,6 +20,7 @@ public:
 	void on_input(const SDL_Event& event);
 
 	void reset();
+	void clear_path_data();
 
 	void set_size(int row, int col);
 	void set_board_pos(SDL_Point point);

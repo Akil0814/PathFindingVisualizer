@@ -25,6 +25,10 @@ public:
     {
         return _status;
     }
+public:
+    int _g_cost = 0;
+    int _h_cost = 0;
+    int _f_cost = 0;
 
 private:
 

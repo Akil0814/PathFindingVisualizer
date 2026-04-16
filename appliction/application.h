@@ -1,9 +1,18 @@
 #pragma once
 #include<SDL.h>
 #include <SDL_ttf.h>
+
+#include <vector>
+
 #include "../status.h"
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
+
+struct TextLabel
+{
+	SDL_Texture* texture = nullptr;
+	SDL_Rect rect = {};
+};
 
 class Application
 {
@@ -37,6 +46,7 @@ private:
 private:
 	Board* _board;
 	ButtonManager* _button_manager;
+	std::vector<TextLabel> _text_labels;
 
 private:
 	static Application* _instance;
@@ -56,6 +66,7 @@ private:
 	SDL_Window* _window = nullptr;
 	SDL_Renderer* _renderer = nullptr;
 	TTF_Font* _button_font = nullptr;
+	TTF_Font* _title_font = nullptr;
 
 	SDL_Color back_ground_color = { 175,175,175,255 };
 };

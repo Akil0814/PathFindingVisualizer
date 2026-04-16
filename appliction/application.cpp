@@ -82,6 +82,19 @@ namespace
 		button->set_message_rect(make_centered_rect(button_rect, texture));
 	}
 
+	SDL_Rect make_label_rect(SDL_Point pos, SDL_Texture* texture)
+	{
+		if (texture == nullptr)
+			return { pos.x, pos.y, 0, 0 };
+
+		int texture_width = 0;
+		int texture_height = 0;
+		if (SDL_QueryTexture(texture, nullptr, nullptr, &texture_width, &texture_height) != 0)
+			return { pos.x, pos.y, 0, 0 };
+
+		return { pos.x, pos.y, texture_width, texture_height };
+	}
+
 	bool init_imgui_for_sdl_renderer(SDL_Window* window, SDL_Renderer* renderer)
 	{
 		if (s_imgui_initialized)
@@ -146,6 +159,12 @@ Application::~Application()
 	{
 		TTF_CloseFont(_button_font);
 		_button_font = nullptr;
+	}
+
+	if (_title_font != nullptr)
+	{
+		TTF_CloseFont(_title_font);
+		_title_font = nullptr;
 	}
 }
 
@@ -212,6 +231,11 @@ void Application::on_input()
 void Application::on_render()
 {
 	_board->on_render(_renderer);
+	for (const TextLabel& label : _text_labels)
+	{
+		if (label.texture != nullptr)
+			SDL_RenderCopy(_renderer, label.texture, nullptr, &label.rect);
+	}
 	_button_manager->on_render(_renderer);
 	rend_imgui();
 }
@@ -230,17 +254,32 @@ void Application::init()
 	_board->init(_renderer);
 	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
 	init_assert(_button_font != nullptr, TTF_GetError());
+	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
+	init_assert(_title_font != nullptr, TTF_GetError());
 
 	TxtTextureManager& txt_manager = TxtTextureManager::instance();
 	const SDL_Color button_text_color = { 25, 25, 25, 255 };
+	const SDL_Color title_text_color = { 15, 15, 15, 255 };
+
 	auto make_text = [&](const char* text, bool is_bold = false) -> SDL_Texture*
 		{
 			return txt_manager.get_txt_texture(_renderer, _button_font, text, is_bold, button_text_color);
 		};
 
+	auto add_title = [&](const char* text, SDL_Point pos)
+		{
+			SDL_Texture* title_texture = txt_manager.get_txt_texture(_renderer, _title_font, text, true, title_text_color);
+			_text_labels.push_back({ title_texture, make_label_rect(pos, title_texture) });
+		};
+
+	add_title("EDIT", { 900, 38 });
+	add_title("CONTROL", { 900, 198 });
+	add_title("RESET", { 900, 478 });
+
 	Button* tmp;
 
-	SDL_Rect rect_button = { 900,20,70,50 };
+	//input type
+	SDL_Rect rect_button = { 900,60,70,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Start", true));
 	tmp->set_on_click([&] {
@@ -248,7 +287,7 @@ void Application::init()
 		_current_input = InPutType::Start;
 		});	
 	
-	rect_button = { 980,20,70,50 };
+	rect_button = { 980,60,70,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Goal", true));
 	tmp->set_on_click([&] {
@@ -256,7 +295,7 @@ void Application::init()
 		_current_input = InPutType::Goal;
 		});	
 
-	rect_button = { 900,80,70,50 };
+	rect_button = { 900,120,70,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Wall", true));
 	tmp->set_on_click([&] {
@@ -265,24 +304,55 @@ void Application::init()
 
 		});
 
-	rect_button = { 980,80,70,50 };
+	rect_button = { 980,120,70,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Clear", true));
+	set_button_label(tmp, rect_button, make_text("ERASE", true));
 	tmp->set_on_click([&] {
-		std::cout << "blank " << std::endl;
+		std::cout << "ERASE " << std::endl;
 		_current_input = InPutType::Empty;
 		});
 
 
-
-	rect_button = { 900,150,150,50 };
+	//run time
+	rect_button = { 900,220,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Run", true));
+	set_button_label(tmp, rect_button, make_text("Auto Run", true));
 	tmp->set_on_click([] {
 		std::cout << "start " << std::endl;
 		});
 
-	rect_button = { 900,220,150,50 };
+	rect_button = { 900,280,150,50 };
+	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Pause", true));
+	tmp->set_on_click([] {
+		std::cout << " Pause " << std::endl;
+		});
+
+	rect_button = { 900,340,150,50 };
+	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Next Step", true));
+	tmp->set_on_click([this] {
+		std::cout << "Next Step" << std::endl;
+		_board->clear_path_data();
+		});
+
+	rect_button = { 900,400,150,50 };
+	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Prev Step", true));
+	tmp->set_on_click([] {
+		std::cout << " Prev Step " << std::endl;
+		});
+
+	//board statse
+	rect_button = { 900,500,150,50 };
+	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Restart", true));
+	tmp->set_on_click([this] {
+		std::cout << "restart " << std::endl;
+		_board->clear_path_data();
+		});
+	
+	rect_button = { 900,560,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
@@ -290,9 +360,10 @@ void Application::init()
 		_board->reset();
 		});
 
-	rect_button = { 900,500,150,50 };
+
+	rect_button = { 900,800,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Dev", true));
+	set_button_label(tmp, rect_button, make_text("Dev Mode", true));
 	tmp->set_on_click([this] {
 		_is_dev_mod ? _is_dev_mod = false : _is_dev_mod = true;
 		});
