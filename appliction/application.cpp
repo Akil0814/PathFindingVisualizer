@@ -204,11 +204,12 @@ void Application::on_input()
 	}
 
 	_board->on_input(_event);
+
 	_button_manager->on_input(_event);
 
 	if (_is_dev_mod)
 		_dev_button_manager->on_input(_event);
-
+	_alg_button_manager->on_input(_event);
 	_edit_button_manager->on_input(_event);
 }
 
@@ -223,6 +224,8 @@ void Application::on_render()
 		_dev_button_manager->on_render(_renderer);
 
 	_edit_button_manager->on_render(_renderer);
+	_alg_button_manager->on_render(_renderer);
+
 	rend_imgui();
 }
 
@@ -235,6 +238,7 @@ void Application::on_update(double delta)
 	if (_is_dev_mod)
 		_dev_button_manager->on_update(static_cast<float>(delta));
 
+	_alg_button_manager->on_update(static_cast<float>(delta));
 	_edit_button_manager->on_update(static_cast<float>(delta));
 }
 
@@ -245,6 +249,7 @@ void Application::init()
 	_controller->set_auto_run_speed(_auto_run_speed);
 	_button_manager = new ButtonManager();
 	_dev_button_manager = new ButtonManager();
+	_alg_button_manager = new ButtonManager();
 	_edit_button_manager = new ButtonManager();
 
 	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
@@ -416,7 +421,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,230,150,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::AStart;
@@ -424,7 +429,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,290,150,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::Dijkstar;
@@ -432,7 +437,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,350,150,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::BFS;
@@ -440,12 +445,13 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,410,150,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::Greedy;
 		_controller->set_algorithm(_current_algorithm);
 		});
+
 	//run time
 	rect_button = { 900,220,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));

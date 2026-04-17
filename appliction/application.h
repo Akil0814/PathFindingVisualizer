@@ -47,6 +47,7 @@ private:
 	SimulationController* _controller = nullptr;
 	ButtonManager* _button_manager = nullptr;
 	ButtonManager* _edit_button_manager = nullptr;
+	ButtonManager* _alg_button_manager = nullptr;
 	ButtonManager* _dev_button_manager = nullptr;
 	std::unique_ptr<NumberRenderer> _number_renderer;
 

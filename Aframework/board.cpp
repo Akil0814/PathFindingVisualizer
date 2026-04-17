@@ -198,29 +198,40 @@ void Board::on_render(SDL_Renderer* renderer)
 
             case Tile::Status::Start:
                 SDL_RenderCopy(renderer, tile_start, nullptr, &rect);
+                draw_tile_cost(status, _board[y][x], rect);
                 continue;
 
             case Tile::Status::Goal:
                 SDL_RenderCopy(renderer, tile_end, nullptr, &rect);
+                draw_tile_cost(status, _board[y][x], rect);
                 continue;
 
             case Tile::Status::Open:
                 if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                {
+                    draw_tile_cost(status, _board[y][x], rect);
                     continue;
+                }
 
                 SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);
                 break;
 
             case Tile::Status::Closed:
                 if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                {
+                    draw_tile_cost(status, _board[y][x], rect);
                     continue;
+                }
 
                 SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);
                 break;
 
             case Tile::Status::Path:
                 if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                {
+                    draw_tile_cost(status, _board[y][x], rect);
                     continue;
+                }
 
                 SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                 break;
@@ -230,6 +241,7 @@ void Board::on_render(SDL_Renderer* renderer)
             }
 
             SDL_RenderFillRect(renderer, &rect);
+            draw_tile_cost(status, _board[y][x], rect);
         }
     }
 
@@ -351,6 +363,25 @@ bool Board::draw_directed_tile(SDL_Renderer* renderer, Tile::Status status, cons
 
     SDL_RenderCopyEx(renderer, texture, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
     return true;
+}
+
+void Board::draw_tile_cost(Tile::Status status, const Tile& tile, const SDL_Rect& rect) const
+{
+    if (!_show_cost || _number_renderer == nullptr || status == Tile::Status::Wall)
+        return;
+
+    const int cost = tile._f_cost;
+    if (cost <= 0)
+        return;
+
+    const SDL_Rect cost_rect =
+    {
+        rect.x + 4,
+        rect.y + 8,
+        rect.w - 8,
+        rect.h - 12
+    };
+    _number_renderer->render_number(cost, cost_rect);
 }
 
 SDL_Texture* Board::get_directed_tile_texture(Tile::Status status, bool diagonal) const

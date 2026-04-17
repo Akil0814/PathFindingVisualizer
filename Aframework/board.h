@@ -45,6 +45,7 @@ private:
 	void draw_board(SDL_Renderer* renderer);
 	void draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos);
 	bool draw_directed_tile(SDL_Renderer* renderer, Tile::Status status, const Tile& tile, int x, int y, const SDL_Rect& rect);
+	void draw_tile_cost(Tile::Status status, const Tile& tile, const SDL_Rect& rect) const;
 	SDL_Texture* get_directed_tile_texture(Tile::Status status, bool diagonal) const;
 	void draw_tile_info_panel(SDL_Renderer* renderer);
 	void render_info_label(SDL_Renderer* renderer, const char* text, SDL_Point pos);
