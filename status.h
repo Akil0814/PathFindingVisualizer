@@ -36,3 +36,11 @@ enum class MoveMode
 	FourWay,
 	EightWay
 };
+
+enum class HeuristicMode
+{
+	Manhattan,
+	Euclidean,
+	Octile,
+	Chebyshev
+};

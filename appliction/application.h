@@ -43,16 +43,13 @@ private:
 	~Application();
 
 private:
-	Board* _board = nullptr;
-	SimulationController* _controller = nullptr;
-	ButtonManager* _button_manager = nullptr;
-	ButtonManager* _edit_button_manager = nullptr;
-	ButtonManager* _alg_button_manager = nullptr;
-	ButtonManager* _dev_button_manager = nullptr;
+	std::unique_ptr<Board> _board;
+	std::unique_ptr<SimulationController> _controller;
+	std::unique_ptr<ButtonManager> _button_manager;
+	std::unique_ptr<ButtonManager> _edit_button_manager;
+	std::unique_ptr<ButtonManager> _alg_button_manager;
+	std::unique_ptr<ButtonManager> _dev_button_manager;
 	std::unique_ptr<NumberRenderer> _number_renderer;
-
-private:
-	static Application* _instance;
 
 	InPutType _current_input = InPutType::Empty;
 	Algorithm _current_algorithm = Algorithm::AStart;

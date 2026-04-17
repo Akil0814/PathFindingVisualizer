@@ -7,6 +7,10 @@ project(A-StatVisualizer)
 #本工程支持的C++版本
 set(CMAKE_CXX_STANDARD 17)
 
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 #把需要拷贝的资源路径都放到ASSETS里
 file(GLOB ASSETS "./assets")
 file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})

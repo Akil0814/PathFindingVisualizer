@@ -1,6 +1,5 @@
 #pragma once
 #include "../status.h"
-#include "../algorithm/a_star_pathfinder.h"
 #include "../algorithm/path_finder.h"
 #include "../Aframework/board.h"
 
@@ -26,9 +25,9 @@ public:
     void set_auto_run_speed(double steps_per_second);
     void set_algorithm(Algorithm alg);
     void set_move_mode(MoveMode move_mode);
-    void set_a_star_heuristic(AStarPathfinder::HeuristicMode heuristic_mode);
+    void set_a_star_heuristic(HeuristicMode heuristic_mode);
     [[nodiscard]] MoveMode move_mode() const;
-    [[nodiscard]] AStarPathfinder::HeuristicMode a_star_heuristic() const;
+    [[nodiscard]] HeuristicMode a_star_heuristic() const;
 
 
 private:
@@ -39,7 +38,7 @@ private:
     PlayMode _current_play_mod = PlayMode::Idle;
     Algorithm _alg_using = Algorithm::AStart;
     MoveMode _move_mode = MoveMode::FourWay;
-    AStarPathfinder::HeuristicMode _a_star_heuristic = AStarPathfinder::HeuristicMode::Manhattan;
+    HeuristicMode _a_star_heuristic = HeuristicMode::Manhattan;
 
     Board* _board = nullptr;
     std::unique_ptr<Pathfinder> _path_finder;

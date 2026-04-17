@@ -12,6 +12,13 @@
 class Board
 {
 	typedef std::vector<std::vector<Tile>> TileBoard;
+	struct BoardState
+	{
+		TileBoard board;
+		Point start_pos_index;
+		Point end_pos_index;
+		Point info_tile_index;
+	};
 
 public:
 	Board();
@@ -34,8 +41,16 @@ public:
 
 	void set_weight(int weight);
 
-	Point get_start_point();
-	Point get_end_point();
+	[[nodiscard]] Point get_start_point() const;
+	[[nodiscard]] Point get_end_point() const;
+
+	[[nodiscard]] int row_count() const;
+	[[nodiscard]] int col_count() const;
+	[[nodiscard]] bool in_bounds(Point index) const;
+	Tile& tile_at(Point index);
+	const Tile& tile_at(Point index) const;
+	[[nodiscard]] std::vector<Point> neighbors(Point index, MoveMode move_mode) const;
+	[[nodiscard]] int path_cost() const;
 
 	bool is_inside(int x, int y) const;
 	void save_snapshot();
@@ -69,13 +84,16 @@ private:
 	static SDL_Texture* tile_stop_rot45;
 
 private:
+	static void destroy_static_textures();
+
+private:
 	bool _move_in_board = false;
 	bool _click_in_board = false;
 
 	bool _show_weight = false;
 	bool _show_cost = false;
 
-	bool _on_process = false;
+	bool _edit_locked = false;
 
 	int _input_weight = 1;
 
@@ -86,7 +104,7 @@ private:
 	int _col = 20;
 
 	TileBoard _board;
-	std::vector<TileBoard> _board_snapshot;
+	std::vector<BoardState> _board_snapshot;
 	InPutType _current_input = InPutType::Empty;
 	std::unique_ptr<NumberRenderer> _number_renderer;
 	TTF_Font* _info_font = nullptr;

@@ -57,7 +57,10 @@ void SimulationController::next_step()
     ++_total_steps;
 
     if (_path_finder->is_finished())
+    {
+        _total_cost = _path_finder->found_path() ? _board->path_cost() : 0;
         set_auto_run(false);
+    }
 }
 
 void SimulationController::pause()
@@ -138,7 +141,7 @@ void SimulationController::set_move_mode(MoveMode move_mode)
     _move_mode = move_mode;
 }
 
-void SimulationController::set_a_star_heuristic(AStarPathfinder::HeuristicMode heuristic_mode)
+void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
 {
     if (_board_edit_locked)
         return;
@@ -154,7 +157,7 @@ MoveMode SimulationController::move_mode() const
     return _move_mode;
 }
 
-AStarPathfinder::HeuristicMode SimulationController::a_star_heuristic() const
+HeuristicMode SimulationController::a_star_heuristic() const
 {
     return _a_star_heuristic;
 }

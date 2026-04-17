@@ -16,8 +16,6 @@
 #include <SDL_mixer.h>//音频库
 #include <SDL_image.h>//图像库
 
-Application* Application::_instance = nullptr;
-
 namespace
 {
 	bool s_imgui_initialized = false;
@@ -133,6 +131,15 @@ Application::Application()
 Application::~Application()
 {
 	shutdown_imgui();
+
+	_number_renderer.reset();
+	_edit_button_manager.reset();
+	_alg_button_manager.reset();
+	_dev_button_manager.reset();
+	_button_manager.reset();
+	_controller.reset();
+	_board.reset();
+
 	TxtTextureManager::instance().clear();
 
 	if (_button_font != nullptr)
@@ -146,14 +153,30 @@ Application::~Application()
 		TTF_CloseFont(_title_font);
 		_title_font = nullptr;
 	}
+
+	if (_renderer != nullptr)
+	{
+		SDL_DestroyRenderer(_renderer);
+		_renderer = nullptr;
+	}
+
+	if (_window != nullptr)
+	{
+		SDL_DestroyWindow(_window);
+		_window = nullptr;
+	}
+
+	Mix_CloseAudio();
+	Mix_Quit();
+	IMG_Quit();
+	TTF_Quit();
+	SDL_Quit();
 }
 
 Application* Application::instance()
 {
-	if (_instance == nullptr)
-		_instance = new Application();
-
-	return _instance;
+	static Application instance;
+	return &instance;
 }
 
 int Application::run(int argc, char** argv)
@@ -249,14 +272,14 @@ void Application::on_update(double delta)
 
 void Application::init()
 {
-	_board = new Board();
-	_controller = new SimulationController(_board);
+	_board = std::make_unique<Board>();
+	_controller = std::make_unique<SimulationController>(_board.get());
 	_controller->set_auto_run_speed(_auto_run_speed);
 	_controller->set_move_mode(_current_move_mod);
-	_button_manager = new ButtonManager();
-	_dev_button_manager = new ButtonManager();
-	_alg_button_manager = new ButtonManager();
-	_edit_button_manager = new ButtonManager();
+	_button_manager = std::make_unique<ButtonManager>();
+	_dev_button_manager = std::make_unique<ButtonManager>();
+	_alg_button_manager = std::make_unique<ButtonManager>();
+	_edit_button_manager = std::make_unique<ButtonManager>();
 
 	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
 	init_assert(_button_font != nullptr, TTF_GetError());
@@ -310,7 +333,7 @@ void Application::rend_imgui()
 			ImGui::BeginDisabled(!can_change_heuristic);
 			if (ImGui::Combo("Heuristic", &heuristic_index, "Manhattan\0Euclidean\0Octile\0Chebyshev\0\0"))
 			{
-				_controller->set_a_star_heuristic(static_cast<AStarPathfinder::HeuristicMode>(heuristic_index));
+				_controller->set_a_star_heuristic(static_cast<HeuristicMode>(heuristic_index));
 			}
 			ImGui::EndDisabled();
 			ImGui::Text("Current: %s", DisplayString::a_star_heuristic(_controller->a_star_heuristic()));

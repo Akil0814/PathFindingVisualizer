@@ -2,9 +2,11 @@
 #include "txt_texture_manager.h"
 #include "../utils/display_string.h"
 
+#include <cassert>
 #include <cmath>
 #include <SDL_image.h>//图像库
 #include <algorithm>
+#include <utility>
 
 SDL_Texture* Board::tile_select = nullptr;
 SDL_Texture* Board::tile_start = nullptr;
@@ -52,8 +54,7 @@ Board::Board()
 
 Board::~Board()
 {
-
-
+    destroy_static_textures();
 }
 
 void Board::reset()
@@ -64,7 +65,7 @@ void Board::reset()
 
     _move_in_board = false;
     _click_in_board = false;
-    _on_process = false;
+    _edit_locked = false;
 
     _index_x = -1;
     _index_y = -1;
@@ -105,11 +106,13 @@ void Board::clear_path_data()
     if (is_valid_tile_index(_end_pos_index))
         _board[_end_pos_index.y][_end_pos_index.x].change_status(Tile::Status::Goal);
 
-    _on_process = false;
+    _edit_locked = false;
 }
 
 void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
 {
+    destroy_static_textures();
+
     _info_font = info_font;
     _number_renderer = std::make_unique<NumberRenderer>(renderer, info_font);
 
@@ -144,6 +147,28 @@ void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
     tile_stop = load_texture("assets/texture/tile_stop.png");
     tile_stop_rot45 = load_texture("assets/texture/tile_stop_rot45.png");
 
+}
+
+void Board::destroy_static_textures()
+{
+    auto destroy_texture = [](SDL_Texture*& texture)
+        {
+            if (texture == nullptr)
+                return;
+
+            SDL_DestroyTexture(texture);
+            texture = nullptr;
+        };
+
+    destroy_texture(tile_select);
+    destroy_texture(tile_start);
+    destroy_texture(tile_end);
+    destroy_texture(tile_open);
+    destroy_texture(tile_open_rot45);
+    destroy_texture(tile_path);
+    destroy_texture(tile_path_rot45);
+    destroy_texture(tile_stop);
+    destroy_texture(tile_stop_rot45);
 }
 
 void Board::on_render(SDL_Renderer* renderer)
@@ -284,6 +309,96 @@ bool Board::is_valid_tile_index(Point index) const
 {
     return index.x >= 0 && index.x < _col
         && index.y >= 0 && index.y < _row;
+}
+
+int Board::row_count() const
+{
+    return _row;
+}
+
+int Board::col_count() const
+{
+    return _col;
+}
+
+bool Board::in_bounds(Point index) const
+{
+    return is_valid_tile_index(index);
+}
+
+Tile& Board::tile_at(Point index)
+{
+    assert(is_valid_tile_index(index));
+    return _board[index.y][index.x];
+}
+
+const Tile& Board::tile_at(Point index) const
+{
+    assert(is_valid_tile_index(index));
+    return _board[index.y][index.x];
+}
+
+std::vector<Point> Board::neighbors(Point index, MoveMode move_mode) const
+{
+    std::vector<Point> result;
+    result.reserve(move_mode == MoveMode::EightWay ? 8 : 4);
+
+    const Point directions_4[] =
+    {
+        { 1, 0 },
+        { -1, 0 },
+        { 0, 1 },
+        { 0, -1 }
+    };
+
+    for (const Point direction : directions_4)
+    {
+        const Point next = { index.x + direction.x, index.y + direction.y };
+        if (is_valid_tile_index(next) && _board[next.y][next.x].get_status() != Tile::Status::Wall)
+            result.push_back(next);
+    }
+
+    if (move_mode != MoveMode::EightWay)
+        return result;
+
+    const Point directions_diagonal[] =
+    {
+        { 1, 1 },
+        { 1, -1 },
+        { -1, 1 },
+        { -1, -1 }
+    };
+
+    for (const Point direction : directions_diagonal)
+    {
+        const Point next = { index.x + direction.x, index.y + direction.y };
+        if (is_valid_tile_index(next) && _board[next.y][next.x].get_status() != Tile::Status::Wall)
+            result.push_back(next);
+    }
+
+    return result;
+}
+
+int Board::path_cost() const
+{
+    if (!is_valid_tile_index(_start_pos_index) || !is_valid_tile_index(_end_pos_index))
+        return 0;
+
+    int cost = 0;
+    int guard = _row * _col;
+    Point current = _end_pos_index;
+
+    while (is_valid_tile_index(current) && guard-- > 0)
+    {
+        if (current.x == _start_pos_index.x && current.y == _start_pos_index.y)
+            return cost;
+
+        const Tile& tile = _board[current.y][current.x];
+        cost += tile._weight;
+        current = tile.get_parent();
+    }
+
+    return 0;
 }
 
 void Board::draw_board(SDL_Renderer* renderer)
@@ -465,7 +580,7 @@ void Board::render_info_number(int value, const SDL_Rect& rect) const
 
 void Board::on_mouse_click(const SDL_Event& event)
 {
-    if (_on_process)
+    if (_edit_locked)
         return;
 
     int mouse_x = 0;
@@ -603,8 +718,8 @@ void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
 
     if (pos.x - _board_render_pos.x < -(SIZE_TILE / 2) || pos.y - _board_render_pos.y < -(SIZE_TILE / 2))
     {
-        int g_pos_x = std::floor(double(pos.x - _board_render_pos.x) / SIZE_TILE);
-        int g_pos_y = std::floor(double(pos.y - _board_render_pos.y) / SIZE_TILE);
+        int g_pos_x = static_cast<int>(std::floor(static_cast<double>(pos.x - _board_render_pos.x) / SIZE_TILE));
+        int g_pos_y = static_cast<int>(std::floor(static_cast<double>(pos.y - _board_render_pos.y) / SIZE_TILE));
 
         grid_pos = { g_pos_x,g_pos_y };
     }
@@ -631,13 +746,18 @@ void Board::undo()
     if (_board_snapshot.empty())
         return;
 
-    _board = std::move(_board_snapshot.back());
+    BoardState state = std::move(_board_snapshot.back());
     _board_snapshot.pop_back();
+
+    _board = std::move(state.board);
+    _start_pos_index = state.start_pos_index;
+    _end_pos_index = state.end_pos_index;
+    _info_tile_index = state.info_tile_index;
 }
 
 void Board::save_snapshot()
 {
-    _board_snapshot.push_back(_board);
+    _board_snapshot.push_back({ _board, _start_pos_index, _end_pos_index, _info_tile_index });
 }
 
 void Board::toggle_show_weight()
@@ -652,7 +772,7 @@ void Board::toggle_show_cost()
 
 void Board::set_edit_locked(bool locked)
 {
-    _on_process = locked;
+    _edit_locked = locked;
 }
 
 void Board::set_weight(int weight)
@@ -660,12 +780,12 @@ void Board::set_weight(int weight)
     _input_weight = weight;
 }
 
-Point Board::get_start_point()
+Point Board::get_start_point() const
 {
     return _start_pos_index;
 }
 
-Point Board::get_end_point()
+Point Board::get_end_point() const
 {
     return _end_pos_index;
 }

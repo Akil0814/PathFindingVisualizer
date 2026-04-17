@@ -2,7 +2,6 @@
 
 #include <SDL.h>
 
-#include "../algorithm/a_star_pathfinder.h"
 #include "../Aframework/tile.h"
 #include "../status.h"
 
@@ -60,27 +59,27 @@ namespace DisplayString
 		}
 	}
 
-	inline const char* a_star_heuristic(AStarPathfinder::HeuristicMode heuristic_mode)
+	inline const char* a_star_heuristic(HeuristicMode heuristic_mode)
 	{
 		switch (heuristic_mode)
 		{
-		case AStarPathfinder::HeuristicMode::Manhattan: return "Manhattan";
-		case AStarPathfinder::HeuristicMode::Euclidean: return "Euclidean";
-		case AStarPathfinder::HeuristicMode::Octile: return "Octile";
-		case AStarPathfinder::HeuristicMode::Chebyshev: return "Chebyshev";
+		case HeuristicMode::Manhattan: return "Manhattan";
+		case HeuristicMode::Euclidean: return "Euclidean";
+		case HeuristicMode::Octile: return "Octile";
+		case HeuristicMode::Chebyshev: return "Chebyshev";
 
 		default: return "Unknown";
 		}
 	}
 
-	inline const char* a_star_heuristic_formula(AStarPathfinder::HeuristicMode heuristic_mode)
+	inline const char* a_star_heuristic_formula(HeuristicMode heuristic_mode)
 	{
 		switch (heuristic_mode)
 		{
-		case AStarPathfinder::HeuristicMode::Manhattan: return "h = abs(dx) + abs(dy)";
-		case AStarPathfinder::HeuristicMode::Euclidean: return "h = sqrt(dx*dx + dy*dy)";
-		case AStarPathfinder::HeuristicMode::Octile: return "h = max(dx, dy) + (sqrt(2)-1)*min(dx, dy)";
-		case AStarPathfinder::HeuristicMode::Chebyshev: return "h = max(abs(dx), abs(dy))";
+		case HeuristicMode::Manhattan: return "h = abs(dx) + abs(dy)";
+		case HeuristicMode::Euclidean: return "h = sqrt(dx*dx + dy*dy)";
+		case HeuristicMode::Octile: return "h = max(dx, dy) + (sqrt(2)-1)*min(dx, dy)";
+		case HeuristicMode::Chebyshev: return "h = max(abs(dx), abs(dy))";
 
 		default: return "Unknown";
 		}
