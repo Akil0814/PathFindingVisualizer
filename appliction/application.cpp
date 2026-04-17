@@ -74,6 +74,27 @@ namespace
 		return { pos.x, pos.y, texture_width, texture_height };
 	}
 
+	SDL_Texture* load_texture(SDL_Renderer* renderer, const char* path)
+	{
+		if (renderer == nullptr || path == nullptr)
+			return nullptr;
+
+		SDL_Surface* surface = IMG_Load(path);
+		if (surface == nullptr)
+		{
+			SDL_Log("IMG_Load failed for %s: %s", path, IMG_GetError());
+			return nullptr;
+		}
+
+		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+		SDL_FreeSurface(surface);
+
+		if (texture == nullptr)
+			SDL_Log("SDL_CreateTextureFromSurface failed for %s: %s", path, SDL_GetError());
+
+		return texture;
+	}
+
 	bool init_imgui_for_sdl_renderer(SDL_Window* window, SDL_Renderer* renderer)
 	{
 		if (s_imgui_initialized)
@@ -130,9 +151,20 @@ Application::Application()
 
 Application::~Application()
 {
+	shutdown();
+}
+
+void Application::shutdown()
+{
+	if (_shutdown_done)
+		return;
+
+	_shutdown_done = true;
+
 	shutdown_imgui();
 
 	_number_renderer.reset();
+	_error_message.reset();
 	_edit_button_manager.reset();
 	_alg_button_manager.reset();
 	_dev_button_manager.reset();
@@ -141,6 +173,12 @@ Application::~Application()
 	_board.reset();
 
 	TxtTextureManager::instance().clear();
+
+	if (_dev_button_texture != nullptr)
+	{
+		SDL_DestroyTexture(_dev_button_texture);
+		_dev_button_texture = nullptr;
+	}
 
 	if (_button_font != nullptr)
 	{
@@ -213,17 +251,37 @@ int Application::run(int argc, char** argv)
 		SDL_RenderPresent(_renderer);
 	}
 
+	shutdown();
 	return 0;
 }
 
 void Application::on_input()
 {
+	clear_error_on_operation(_event);
+
 	if (_is_dev_mod && ImGui::GetCurrentContext() != nullptr)
 	{
 		ImGui_ImplSDL2_ProcessEvent(&_event);
 		const ImGuiIO& io = ImGui::GetIO();
 		if (io.WantCaptureMouse || io.WantCaptureKeyboard)
 			return;
+	}
+
+	if (_controller != nullptr &&
+		_controller->is_board_edit_locked() &&
+		(_event.type == SDL_MOUSEBUTTONDOWN || _event.type == SDL_MOUSEMOTION))
+	{
+		const int mouse_x = _event.type == SDL_MOUSEBUTTONDOWN ? _event.button.x : _event.motion.x;
+		const int mouse_y = _event.type == SDL_MOUSEBUTTONDOWN ? _event.button.y : _event.motion.y;
+		const bool is_edit_action = _event.type == SDL_MOUSEBUTTONDOWN ||
+			(_event.type == SDL_MOUSEMOTION && (_event.motion.state & SDL_BUTTON_LMASK));
+
+		if (is_edit_action && _board != nullptr && _board->is_inside(mouse_x, mouse_y))
+		{
+			if (_error_message != nullptr)
+				_error_message->show("Board is locked. Reset or Restart first.");
+			return;
+		}
 	}
 
 	_board->on_input(_event);
@@ -249,6 +307,9 @@ void Application::on_render()
 	_edit_button_manager->on_render(_renderer);
 	_alg_button_manager->on_render(_renderer);
 
+	if (_error_message != nullptr)
+		_error_message->render(_renderer, _title_font, _width);
+
 	rend_imgui();
 }
 
@@ -257,9 +318,8 @@ void Application::on_update(double delta)
 	_board->on_update(delta,_current_input);
 	_controller->on_update(delta);
 
-	const bool edit_enabled = _controller == nullptr || !_controller->is_board_edit_locked();
-	_edit_button_manager->set_enabled(edit_enabled);
-	_alg_button_manager->set_enabled(edit_enabled);
+	if (Button* pause_button = _button_manager->get_button(_pause_button_index))
+		pause_button->set_enabled(_controller != nullptr && _controller->is_auto_running());
 
 	_button_manager->on_update(static_cast<float>(delta));
 
@@ -270,16 +330,58 @@ void Application::on_update(double delta)
 	_edit_button_manager->on_update(static_cast<float>(delta));
 }
 
+void Application::clear_error_on_operation(const SDL_Event& event)
+{
+	if (_error_message == nullptr)
+		return;
+
+	if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_KEYDOWN)
+		_error_message->clear();
+}
+
+bool Application::validate_unlocked_operation(const char* message)
+{
+	if (_controller == nullptr || !_controller->is_board_edit_locked())
+		return true;
+
+	if (_error_message != nullptr)
+		_error_message->show(message != nullptr ? message : "Reset or Restart first.");
+
+	return false;
+}
+
+bool Application::validate_path_request()
+{
+	if (_board == nullptr)
+		return false;
+
+	if (!_board->in_bounds(_board->get_start_point()))
+	{
+		if (_error_message != nullptr)
+			_error_message->show("Missing start tile.");
+		return false;
+	}
+
+	if (!_board->in_bounds(_board->get_end_point()))
+	{
+		if (_error_message != nullptr)
+			_error_message->show("Missing goal tile.");
+		return false;
+	}
+
+	return true;
+}
+
 void Application::init()
 {
 	_board = std::make_unique<Board>();
 	_controller = std::make_unique<SimulationController>(_board.get());
 	_controller->set_auto_run_speed(_auto_run_speed);
-	_controller->set_move_mode(_current_move_mod);
 	_button_manager = std::make_unique<ButtonManager>();
 	_dev_button_manager = std::make_unique<ButtonManager>();
 	_alg_button_manager = std::make_unique<ButtonManager>();
 	_edit_button_manager = std::make_unique<ButtonManager>();
+	_error_message = std::make_unique<ErrorMessage>();
 
 	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
 	init_assert(_button_font != nullptr, TTF_GetError());
@@ -320,22 +422,38 @@ void Application::rend_imgui()
 		ImGui::Text("Application");
 		ImGui::Separator();
 		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
-		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_current_algorithm));
-		ImGui::Text("Move mode: %s", DisplayString::move_mode(_current_move_mod));
+		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
+		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
 
-		if (_current_algorithm == Algorithm::AStart && _controller != nullptr)
+		ImGui::Spacing();
+		ImGui::Text("State Machine");
+		ImGui::Separator();
+		if (_controller != nullptr)
+		{
+			ImGui::Text("Sim state: %s", DisplayString::sim_state(_controller->sim_state()));
+			ImGui::Text("Play mode: %s", DisplayString::play_mode(_controller->play_mode()));
+			ImGui::Text("Board edit: %s", _controller->is_board_edit_locked() ? "Locked" : "Unlocked");
+			ImGui::Text("Auto run: %s", _controller->is_auto_running() ? "true" : "false");
+			ImGui::Text("Pathfinder: %s", _controller->is_pathfinder_finished() ? "Finished" : "Active");
+			ImGui::Text("Found path: %s", _controller->found_path() ? "true" : "false");
+			ImGui::TextWrapped("Flow: Editing -> Running -> Finished -> Restart/Reset -> Editing");
+		}
+		else
+		{
+			ImGui::Text("Controller: null");
+		}
+
+		if (_controller != nullptr && _controller->algorithm() == Algorithm::AStart)
 		{
 			ImGui::Spacing();
 			ImGui::Text("A* Heuristic");
 			ImGui::Separator();
 			int heuristic_index = static_cast<int>(_controller->a_star_heuristic());
-			const bool can_change_heuristic = !_controller->is_board_edit_locked();
-			ImGui::BeginDisabled(!can_change_heuristic);
 			if (ImGui::Combo("Heuristic", &heuristic_index, "Manhattan\0Euclidean\0Octile\0Chebyshev\0\0"))
 			{
-				_controller->set_a_star_heuristic(static_cast<HeuristicMode>(heuristic_index));
+				if (validate_unlocked_operation("Reset or Restart before changing heuristic."))
+					_controller->set_a_star_heuristic(static_cast<HeuristicMode>(heuristic_index));
 			}
-			ImGui::EndDisabled();
 			ImGui::Text("Current: %s", DisplayString::a_star_heuristic(_controller->a_star_heuristic()));
 			ImGui::TextWrapped("Formula: %s", DisplayString::a_star_heuristic_formula(_controller->a_star_heuristic()));
 		}
@@ -343,21 +461,20 @@ void Application::rend_imgui()
 		ImGui::Spacing();
 		ImGui::Text("Movement");
 		ImGui::Separator();
-		int move_mode_index = _current_move_mod == MoveMode::EightWay ? 1 : 0;
-		const bool can_change_move_mode = _controller == nullptr || !_controller->is_board_edit_locked();
-		ImGui::BeginDisabled(!can_change_move_mode);
+		int move_mode_index = (_controller != nullptr && _controller->move_mode() == MoveMode::EightWay) ? 1 : 0;
 		if (ImGui::Combo("Move mode", &move_mode_index, "Four Way\0Eight Way\0\0"))
 		{
-			_current_move_mod = move_mode_index == 1 ? MoveMode::EightWay : MoveMode::FourWay;
-			if (_controller != nullptr)
-				_controller->set_move_mode(_current_move_mod);
+			if (validate_unlocked_operation("Reset or Restart before changing move mode."))
+			{
+				if (_controller != nullptr)
+					_controller->set_move_mode(move_mode_index == 1 ? MoveMode::EightWay : MoveMode::FourWay);
+			}
 		}
-		ImGui::EndDisabled();
 
 		ImGui::Spacing();
 		ImGui::Text("Auto Run");
 		ImGui::Separator();
-		if (ImGui::SliderFloat("Speed", &_auto_run_speed, 1.0f, 30.0f, "%.0f steps/s") && _controller != nullptr)
+		if (ImGui::SliderFloat("Speed", &_auto_run_speed, 1.0f, 100.0f, "%.0f steps/s") && _controller != nullptr)
 			_controller->set_auto_run_speed(_auto_run_speed);
 
 		ImGui::Spacing();
@@ -408,13 +525,26 @@ void Application::render_status_titles()
 
 			const SDL_Rect rect = make_label_rect(pos, title_texture);
 			SDL_RenderCopy(_renderer, title_texture, nullptr, &rect);
-		};
+	};
 
-	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 40 });
-	render_title(std::string("Alg using: ") + DisplayString::algorithm(_current_algorithm), { 20, 212 });
+	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 20 });
+	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 212 });
 
-	render_title("Control", { 900, 200 });
-	render_title("Reset", { 900, 480 });
+	render_title("Control", { 900, 180 });
+	render_title("Reset", { 900, 460 });
+
+	std::string status_text = "Unknown";
+	if (_controller != nullptr)
+	{
+		if (_controller->is_pathfinder_finished())
+			status_text = _controller->found_path() ? "Finished Found" : "Finished No Path";
+		else if (_controller->play_mode() == PlayMode::Pause && _controller->is_board_edit_locked())
+			status_text = "Paused";
+		else
+			status_text = DisplayString::sim_state(_controller->sim_state());
+	}
+	render_title("Status:", { 900, 620 });
+	render_title(status_text, { 900, 640 });
 
 	const int total_steps = _controller != nullptr ? _controller->total_steps() : 0;
 	const int total_cost = _controller != nullptr ? _controller->total_cost() : 0;
@@ -427,7 +557,7 @@ void Application::render_status_titles()
 	}
 
 	if(_is_dev_mod)
-		render_title("Advance", { 20,504 });
+		render_title("Advance", { 20,474 });
 }
 
 void Application::init_button()
@@ -443,32 +573,44 @@ void Application::init_button()
 		};
 
 	//input type
-	SDL_Rect rect_button = { 900,60,70,50 };
+	SDL_Rect rect_button = { 900,40,70,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Start", true));
-	tmp->set_on_click([&] {
+	tmp->set_on_click([this] {
+		if (!validate_unlocked_operation("Reset or Restart before editing board."))
+			return;
+
 		_current_input = InPutType::Start;
 		});
 
-	rect_button = { 980,60,70,50 };
+	rect_button = { 980,40,70,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Goal", true));
-	tmp->set_on_click([&] {
+	tmp->set_on_click([this] {
+		if (!validate_unlocked_operation("Reset or Restart before editing board."))
+			return;
+
 		_current_input = InPutType::Goal;
 		});
 
-	rect_button = { 900,120,70,50 };
+	rect_button = { 900,100,70,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Wall", true));
-	tmp->set_on_click([&] {
+	tmp->set_on_click([this] {
+		if (!validate_unlocked_operation("Reset or Restart before editing board."))
+			return;
+
 		_current_input = InPutType::Wall;
 
 		});
 
-	rect_button = { 980,120,70,50 };
+	rect_button = { 980,100,70,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("ERASE", true));
-	tmp->set_on_click([&] {
+	tmp->set_on_click([this] {
+		if (!validate_unlocked_operation("Reset or Restart before editing board."))
+			return;
+
 		_current_input = InPutType::Empty;
 		});
 
@@ -476,97 +618,139 @@ void Application::init_button()
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
-		_current_algorithm = Algorithm::AStart;
-		_controller->set_algorithm(_current_algorithm);
+		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
+			return;
+
+		_controller->set_algorithm(Algorithm::AStart);
 		});
 
 	rect_button = { 20,290,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
-		_current_algorithm = Algorithm::Dijkstar;
-		_controller->set_algorithm(_current_algorithm);
+		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
+			return;
+
+		_controller->set_algorithm(Algorithm::Dijkstar);
 		});
 
 	rect_button = { 20,350,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
-		_current_algorithm = Algorithm::BFS;
-		_controller->set_algorithm(_current_algorithm);
+		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
+			return;
+
+		_controller->set_algorithm(Algorithm::BFS);
 		});
 
 	rect_button = { 20,410,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
-		_current_algorithm = Algorithm::Greedy;
-		_controller->set_algorithm(_current_algorithm);
+		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
+			return;
+
+		_controller->set_algorithm(Algorithm::Greedy);
 		});
 
 	//run time
-	rect_button = { 900,220,150,50 };
+	rect_button = { 900,200,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Auto Run", true));
 	tmp->set_on_click([this] {
+		if (!validate_path_request())
+			return;
+
 		std::cout << "start " << std::endl;
-		_current_play_mod = PlayMode::AutoRun;
 		_controller->set_auto_run(true);
 		});
 
-	rect_button = { 900,280,150,50 };
+	rect_button = { 900,260,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	_pause_button_index = _button_manager->size() - 1;
+	tmp->set_enabled(false);
 	set_button_label(tmp, rect_button, make_text("Pause", true));
 	tmp->set_on_click([this] {
-		_current_play_mod = PlayMode::Pause;
+		if (_controller == nullptr || !_controller->is_auto_running())
+			return;
+
 		_controller->pause();
 		});
 
-	rect_button = { 900,340,150,50 };
+	rect_button = { 900,320,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Next Step", true));
 	tmp->set_on_click([this] {
+		if (!validate_path_request())
+			return;
+
 		std::cout << "Next Step" << std::endl;
 		_controller->next_step();
 		});
 
-	rect_button = { 900,400,150,50 };
+	rect_button = { 900,380,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Prev Step", true));
 	tmp->set_on_click([this] {
+		if (_controller != nullptr && _controller->is_auto_running())
+		{
+			if (_error_message != nullptr)
+				_error_message->show("Pause before undo.");
+			return;
+		}
+
 		std::cout << " Prev Step " << std::endl;
-		_board->undo();
+		if (_controller == nullptr || !_controller->previous_step())
+		{
+			if (_error_message != nullptr)
+				_error_message->show("No previous step.");
+		}
 		});
 
 	//board statse
-	rect_button = { 900,500,150,50 };
+	rect_button = { 900,480,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Restart", true));
 	tmp->set_on_click([this] {
 		std::cout << "restart " << std::endl;
-		_current_play_mod = PlayMode::Idle;
 		_controller->restart();
 		});
 
-	rect_button = { 900,560,150,50 };
+	rect_button = { 900,540,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
 		std::cout << "reset " << std::endl;
-		_current_play_mod = PlayMode::Idle;
 		_board->reset();
 		_controller->restart();
 		});
 
 
-	rect_button = {1000,650,50,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Dev", true));
+	rect_button = { 20,678,22,22 };
+
+	if (_dev_button_texture == nullptr)
+		_dev_button_texture = load_texture(_renderer, "assets/texture/dev_button.png");
+
+	if (_dev_button_texture != nullptr)
+	{
+		tmp = _button_manager->add_button(Button(
+			_renderer,
+			rect_button,
+			{ 21,679,20,20 },
+			_dev_button_texture,
+			nullptr,nullptr));
+	}
+	else
+	{
+		tmp = _button_manager->add_button(Button(_renderer, rect_button));
+		set_button_label(tmp, rect_button, make_text("Dev", true));
+	}
 	tmp->set_on_click([this] {
 		_is_dev_mod = !_is_dev_mod;
 		});
 
-	rect_button = { 20,530,150,50 };
+	rect_button = { 20,490,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Show Cost", true));
 	tmp->set_on_click([this] {
@@ -574,14 +758,17 @@ void Application::init_button()
 		});
 
 
-	rect_button = { 20,590,150,50 };
+	rect_button = { 20,550,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Edit Weight", true));
 	tmp->set_on_click([this] {
+		if (!validate_unlocked_operation("Reset or Restart before editing weight."))
+			return;
+
 		_current_input = InPutType::Weight;
 		});
 
-	rect_button = { 20,650,150,50 };
+	rect_button = { 20,610,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Weight Graph", true));
 	tmp->set_on_click([this] {

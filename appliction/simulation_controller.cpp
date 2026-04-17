@@ -30,11 +30,22 @@ void SimulationController::on_update(double delta)
         return;
 
     _timer += delta;
-    if (_timer < _step_interval)
-        return;
 
-    _timer = 0.0;
-    next_step();
+    constexpr int max_steps_per_frame = 64;
+    int steps_this_frame = 0;
+
+    while (_timer >= _step_interval &&
+        _auto_run &&
+        _current_play_mod == PlayMode::AutoRun &&
+        steps_this_frame < max_steps_per_frame)
+    {
+        _timer -= _step_interval;
+        next_step();
+        ++steps_this_frame;
+    }
+
+    if (steps_this_frame == max_steps_per_frame)
+        _timer = 0.0;
 }
 
 void SimulationController::next_step()
@@ -52,6 +63,7 @@ void SimulationController::next_step()
     }
 
     set_board_edit_locked(true);
+    save_history_state();
     _board->save_snapshot();
     _path_finder->next_step();
     ++_total_steps;
@@ -63,8 +75,39 @@ void SimulationController::next_step()
     }
 }
 
+bool SimulationController::previous_step()
+{
+    if (_board == nullptr || _history.empty())
+        return false;
+
+    if (!_board->undo())
+        return false;
+
+    HistoryState state = std::move(_history.back());
+    _history.pop_back();
+
+    _path_finder = std::move(state.path_finder);
+    if (_path_finder != nullptr)
+    {
+        _path_finder->bind_board(_board);
+        _path_finder->set_move_mode(_move_mode);
+    }
+
+    _auto_run = false;
+    _current_play_mod = PlayMode::Pause;
+    _timer = 0.0;
+    _total_cost = state.total_cost;
+    _total_steps = state.total_steps;
+
+    set_board_edit_locked(true);
+    return true;
+}
+
 void SimulationController::pause()
 {
+    if (!is_auto_running())
+        return;
+
     _auto_run = false;
     _current_play_mod = PlayMode::Pause;
     _timer = 0.0;
@@ -78,6 +121,7 @@ void SimulationController::restart()
     _timer = 0.0;
     _total_cost = 0;
     _total_steps = 0;
+    _history.clear();
     set_board_edit_locked(false);
 
     if (_board != nullptr)
@@ -99,6 +143,42 @@ int SimulationController::total_steps() const
 bool SimulationController::is_board_edit_locked() const
 {
     return _board_edit_locked;
+}
+
+bool SimulationController::is_auto_running() const
+{
+    return _auto_run && _current_play_mod == PlayMode::AutoRun;
+}
+
+bool SimulationController::is_pathfinder_finished() const
+{
+    return _path_finder != nullptr && _path_finder->is_finished();
+}
+
+bool SimulationController::found_path() const
+{
+    return _path_finder != nullptr && _path_finder->found_path();
+}
+
+PlayMode SimulationController::play_mode() const
+{
+    return _current_play_mod;
+}
+
+SimState SimulationController::sim_state() const
+{
+    if (is_pathfinder_finished())
+        return SimState::Finished;
+
+    if (_board_edit_locked)
+        return SimState::Running;
+
+    return SimState::Editing;
+}
+
+Algorithm SimulationController::algorithm() const
+{
+    return _alg_using;
 }
 
 void SimulationController::set_auto_run(bool enabled)
@@ -139,6 +219,9 @@ void SimulationController::set_move_mode(MoveMode move_mode)
         return;
 
     _move_mode = move_mode;
+
+    if (_path_finder != nullptr)
+        _path_finder->set_move_mode(_move_mode);
 }
 
 void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
@@ -193,5 +276,20 @@ void SimulationController::create_path_finder()
     }
 
     if (_path_finder != nullptr)
+    {
         _path_finder->bind_board(_board);
+        _path_finder->set_move_mode(_move_mode);
+    }
+}
+
+void SimulationController::save_history_state()
+{
+    HistoryState state;
+    state.path_finder = _path_finder != nullptr ? _path_finder->clone() : nullptr;
+    state.play_mode = _current_play_mod;
+    state.timer = _timer;
+    state.total_cost = _total_cost;
+    state.total_steps = _total_steps;
+
+    _history.push_back(std::move(state));
 }

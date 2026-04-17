@@ -12,6 +12,7 @@ public:
         Wall,
         Start,
         Goal,
+        Current,
         Open,
         Closed,
         Path

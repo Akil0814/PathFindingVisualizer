@@ -37,7 +37,7 @@ public:
 	void toggle_show_cost();
 	void set_edit_locked(bool locked);
 
-	void undo();
+	bool undo();
 
 	void set_weight(int weight);
 
@@ -76,6 +76,8 @@ private:
 	static SDL_Texture* tile_select;
 	static SDL_Texture* tile_start;
 	static SDL_Texture* tile_end;
+	static SDL_Texture* tile_current;
+	static SDL_Texture* tile_current_rot45;
 	static SDL_Texture* tile_open;
 	static SDL_Texture* tile_open_rot45;
 	static SDL_Texture* tile_path;

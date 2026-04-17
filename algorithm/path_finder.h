@@ -3,6 +3,8 @@
 #include"../Aframework/board.h"
 #include "../status.h"
 
+#include <memory>
+
 class Pathfinder
 {
 public:
@@ -13,7 +15,13 @@ public:
         _board = board;
     }
 
+    void set_move_mode(MoveMode move_mode)
+    {
+        _move_mode = move_mode;
+    }
+
     virtual void next_step() = 0;
+    [[nodiscard]] virtual std::unique_ptr<Pathfinder> clone() const = 0;
 
     bool is_finished() const
     {
@@ -43,7 +51,13 @@ protected:
         _found_path = false;
     }
 
+    [[nodiscard]] MoveMode move_mode() const
+    {
+        return _move_mode;
+    }
+
 	Board* _board = nullptr;
+    MoveMode _move_mode = MoveMode::FourWay;
 
 	bool _finished = false;
 	bool _found_path = false;

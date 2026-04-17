@@ -3,11 +3,12 @@
 #include <SDL_ttf.h>
 
 #include <memory>
-#include <vector>
+#include <cstddef>
 
 #include "../status.h"
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
+#include "../Aframework/error_message.h"
 #include "../Aframework/number_renderer.h"
 #include "simulation_controller.h"
 
@@ -29,6 +30,10 @@ private:
 
 	void rend_imgui();
 	void render_status_titles();
+	void clear_error_on_operation(const SDL_Event& event);
+	bool validate_unlocked_operation(const char* message);
+	bool validate_path_request();
+	void shutdown();
 
 	void init_assert(bool flag, const char* err_msg)
 	{
@@ -49,19 +54,18 @@ private:
 	std::unique_ptr<ButtonManager> _edit_button_manager;
 	std::unique_ptr<ButtonManager> _alg_button_manager;
 	std::unique_ptr<ButtonManager> _dev_button_manager;
+	std::unique_ptr<ErrorMessage> _error_message;
 	std::unique_ptr<NumberRenderer> _number_renderer;
 
 	InPutType _current_input = InPutType::Empty;
-	Algorithm _current_algorithm = Algorithm::AStart;
-	PlayMode _current_play_mod = PlayMode::Idle;
-	MoveMode _current_move_mod = MoveMode::FourWay;
 
 	int _input_weight = 1;
 	float _auto_run_speed = 10.0f;
+	std::size_t _pause_button_index = 0;
 
 	bool _active = { true };
 	bool _is_dev_mod = { false };
-	bool _show_weight_graph = { false };
+	bool _shutdown_done = { false };
 
 	int _width = 1080;
 	int _height = 720;
@@ -71,6 +75,7 @@ private:
 
 	SDL_Window* _window = nullptr;
 	SDL_Renderer* _renderer = nullptr;
+	SDL_Texture* _dev_button_texture = nullptr;
 	TTF_Font* _button_font = nullptr;
 	TTF_Font* _title_font = nullptr;
 

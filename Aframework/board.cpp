@@ -11,6 +11,8 @@
 SDL_Texture* Board::tile_select = nullptr;
 SDL_Texture* Board::tile_start = nullptr;
 SDL_Texture* Board::tile_end = nullptr;
+SDL_Texture* Board::tile_current = nullptr;
+SDL_Texture* Board::tile_current_rot45 = nullptr;
 SDL_Texture* Board::tile_open = nullptr;
 SDL_Texture* Board::tile_open_rot45 = nullptr;
 SDL_Texture* Board::tile_path = nullptr;
@@ -92,6 +94,7 @@ void Board::clear_path_data()
 
             const Tile::Status status = tile.get_status();
             if (status == Tile::Status::Open ||
+                status == Tile::Status::Current ||
                 status == Tile::Status::Closed ||
                 status == Tile::Status::Path)
             {
@@ -140,6 +143,8 @@ void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
     tile_select = load_texture("assets/texture/tile_select.png");
     tile_start = load_texture("assets/texture/tile_start_pos.png");
     tile_end = load_texture("assets/texture/tile_end_pos.png");
+    tile_current = load_texture("assets/texture/tile_current.png");
+    tile_current_rot45 = load_texture("assets/texture/tile_current_rot45.png");
     tile_open = load_texture("assets/texture/tile_open.png");
     tile_open_rot45 = load_texture("assets/texture/tile_open_rot45.png");
     tile_path = load_texture("assets/texture/tile_path.png");
@@ -163,6 +168,8 @@ void Board::destroy_static_textures()
     destroy_texture(tile_select);
     destroy_texture(tile_start);
     destroy_texture(tile_end);
+    destroy_texture(tile_current);
+    destroy_texture(tile_current_rot45);
     destroy_texture(tile_open);
     destroy_texture(tile_open_rot45);
     destroy_texture(tile_path);
@@ -231,14 +238,20 @@ void Board::on_render(SDL_Renderer* renderer)
                 draw_tile_cost(status, _board[y][x], rect);
                 continue;
 
+            case Tile::Status::Current:
+                if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                {
+                    draw_tile_cost(status, _board[y][x], rect);
+                    continue;
+                }
+                break;
+
             case Tile::Status::Open:
                 if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
                 {
                     draw_tile_cost(status, _board[y][x], rect);
                     continue;
                 }
-
-                SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);
                 break;
 
             case Tile::Status::Closed:
@@ -247,8 +260,6 @@ void Board::on_render(SDL_Renderer* renderer)
                     draw_tile_cost(status, _board[y][x], rect);
                     continue;
                 }
-
-                SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);
                 break;
 
             case Tile::Status::Path:
@@ -257,8 +268,6 @@ void Board::on_render(SDL_Renderer* renderer)
                     draw_tile_cost(status, _board[y][x], rect);
                     continue;
                 }
-
-                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                 break;
 
             default:
@@ -503,6 +512,9 @@ SDL_Texture* Board::get_directed_tile_texture(Tile::Status status, bool diagonal
 {
     switch (status)
     {
+    case Tile::Status::Current:
+        return diagonal ? tile_current_rot45 : tile_current;
+
     case Tile::Status::Open:
         return diagonal ? tile_open_rot45 : tile_open;
 
@@ -741,10 +753,10 @@ void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
     SDL_RenderCopy(renderer, tile_select, nullptr, &rect);
 }
 
-void Board::undo()
+bool Board::undo()
 {
     if (_board_snapshot.empty())
-        return;
+        return false;
 
     BoardState state = std::move(_board_snapshot.back());
     _board_snapshot.pop_back();
@@ -753,6 +765,8 @@ void Board::undo()
     _start_pos_index = state.start_pos_index;
     _end_pos_index = state.end_pos_index;
     _info_tile_index = state.info_tile_index;
+
+    return true;
 }
 
 void Board::save_snapshot()

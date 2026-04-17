@@ -59,6 +59,30 @@ namespace DisplayString
 		}
 	}
 
+	inline const char* play_mode(PlayMode play_mode)
+	{
+		switch (play_mode)
+		{
+		case PlayMode::Idle: return "Idle";
+		case PlayMode::AutoRun: return "Auto Run";
+		case PlayMode::Pause: return "Pause";
+
+		default: return "Unknown";
+		}
+	}
+
+	inline const char* sim_state(SimState sim_state)
+	{
+		switch (sim_state)
+		{
+		case SimState::Editing: return "Editing";
+		case SimState::Running: return "Running";
+		case SimState::Finished: return "Finished";
+
+		default: return "Unknown";
+		}
+	}
+
 	inline const char* a_star_heuristic(HeuristicMode heuristic_mode)
 	{
 		switch (heuristic_mode)
@@ -93,6 +117,7 @@ namespace DisplayString
 		case Tile::Status::Wall: return "Wall";
 		case Tile::Status::Start: return "Start";
 		case Tile::Status::Goal: return "Goal";
+		case Tile::Status::Current: return "Current";
 		case Tile::Status::Open: return "Open";
 		case Tile::Status::Closed: return "Closed";
 		case Tile::Status::Path: return "Path";
