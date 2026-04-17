@@ -28,6 +28,7 @@ public:
 
 	void toggle_show_weight();
 	void toggle_show_cost();
+	void set_edit_locked(bool locked);
 
 	void undo();
 

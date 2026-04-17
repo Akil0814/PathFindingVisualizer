@@ -57,6 +57,7 @@ private:
 	InPutType _current_input = InPutType::Empty;
 	Algorithm _current_algorithm = Algorithm::AStart;
 	PlayMode _current_play_mod = PlayMode::Idle;
+	MoveMode _current_move_mod = MoveMode::FourWay;
 
 	int _input_weight = 1;
 	float _auto_run_speed = 10.0f;

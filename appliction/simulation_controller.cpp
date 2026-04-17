@@ -5,6 +5,8 @@
 #include "../algorithm/dijkstra_pathfinder.h"
 #include "../algorithm/greedy_pathfinder.h"
 
+#include <utility>
+
 SimulationController::SimulationController(Board* board)
     : _board(board)
 {
@@ -17,6 +19,9 @@ void SimulationController::bind_board(Board* board)
 
     if (_path_finder != nullptr)
         _path_finder->bind_board(_board);
+
+    if (_board != nullptr)
+        _board->set_edit_locked(_board_edit_locked);
 }
 
 void SimulationController::on_update(double delta)
@@ -46,6 +51,7 @@ void SimulationController::next_step()
         return;
     }
 
+    set_board_edit_locked(true);
     _board->save_snapshot();
     _path_finder->next_step();
     ++_total_steps;
@@ -69,6 +75,7 @@ void SimulationController::restart()
     _timer = 0.0;
     _total_cost = 0;
     _total_steps = 0;
+    set_board_edit_locked(false);
 
     if (_board != nullptr)
         _board->clear_path_data();
@@ -86,14 +93,23 @@ int SimulationController::total_steps() const
     return _total_steps;
 }
 
+bool SimulationController::is_board_edit_locked() const
+{
+    return _board_edit_locked;
+}
+
 void SimulationController::set_auto_run(bool enabled)
 {
     _auto_run = enabled;
     _current_play_mod = enabled ? PlayMode::AutoRun : PlayMode::Pause;
     _timer = 0.0;
 
-    if (enabled && _path_finder == nullptr)
-        create_path_finder();
+    if (enabled)
+    {
+        set_board_edit_locked(true);
+        if (_path_finder == nullptr)
+            create_path_finder();
+    }
 }
 
 void SimulationController::set_auto_run_speed(double steps_per_second)
@@ -106,9 +122,49 @@ void SimulationController::set_auto_run_speed(double steps_per_second)
 
 void SimulationController::set_algorithm(Algorithm type)
 {
+    if (_board_edit_locked)
+        return;
+
     _alg_using = type;
     _timer = 0.0;
     create_path_finder();
+}
+
+void SimulationController::set_move_mode(MoveMode move_mode)
+{
+    if (_board_edit_locked)
+        return;
+
+    _move_mode = move_mode;
+}
+
+void SimulationController::set_a_star_heuristic(AStarPathfinder::HeuristicMode heuristic_mode)
+{
+    if (_board_edit_locked)
+        return;
+
+    _a_star_heuristic = heuristic_mode;
+
+    if (_alg_using == Algorithm::AStart)
+        create_path_finder();
+}
+
+MoveMode SimulationController::move_mode() const
+{
+    return _move_mode;
+}
+
+AStarPathfinder::HeuristicMode SimulationController::a_star_heuristic() const
+{
+    return _a_star_heuristic;
+}
+
+void SimulationController::set_board_edit_locked(bool locked)
+{
+    _board_edit_locked = locked;
+
+    if (_board != nullptr)
+        _board->set_edit_locked(locked);
 }
 
 void SimulationController::create_path_finder()
@@ -122,8 +178,12 @@ void SimulationController::create_path_finder()
         _path_finder = std::make_unique<DijkstraPathfinder>();
         break;
     case Algorithm::AStart:
-        _path_finder = std::make_unique<AStarPathfinder>();
+    {
+        auto finder = std::make_unique<AStarPathfinder>();
+        finder->_heuristic_mode = _a_star_heuristic;
+        _path_finder = std::move(finder);
         break;
+    }
     case Algorithm::Greedy:
         _path_finder = std::make_unique<GreedyPathfinder>();
         break;

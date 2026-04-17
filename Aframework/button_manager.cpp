@@ -45,6 +45,12 @@ Button* ButtonManager::add_button(Button button)
     return &(_buttons.back());
 }
 
+void ButtonManager::set_enabled(bool enabled)
+{
+    for (Button& button : _buttons)
+        button.set_enabled(enabled);
+}
+
 void ButtonManager::clear()
 {
     _buttons.clear();

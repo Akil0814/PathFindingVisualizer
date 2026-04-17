@@ -15,6 +15,7 @@ public:
     void on_render(SDL_Renderer* renderer);
 
     Button* add_button(Button button);
+    void set_enabled(bool enabled);
 
     template <typename... Args>
     Button& emplace_button(Args&&... args)

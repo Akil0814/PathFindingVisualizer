@@ -233,6 +233,11 @@ void Application::on_update(double delta)
 {
 	_board->on_update(delta,_current_input);
 	_controller->on_update(delta);
+
+	const bool edit_enabled = _controller == nullptr || !_controller->is_board_edit_locked();
+	_edit_button_manager->set_enabled(edit_enabled);
+	_alg_button_manager->set_enabled(edit_enabled);
+
 	_button_manager->on_update(static_cast<float>(delta));
 
 	if (_is_dev_mod)
@@ -247,6 +252,7 @@ void Application::init()
 	_board = new Board();
 	_controller = new SimulationController(_board);
 	_controller->set_auto_run_speed(_auto_run_speed);
+	_controller->set_move_mode(_current_move_mod);
 	_button_manager = new ButtonManager();
 	_dev_button_manager = new ButtonManager();
 	_alg_button_manager = new ButtonManager();
@@ -283,7 +289,7 @@ void Application::rend_imgui()
 	SDL_GetMouseState(&mouse_x, &mouse_y);
 
 	ImGui::SetNextWindowPos(ImVec2(15.0f, 15.0f), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(300.0f, 300.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(360.0f, 390.0f), ImGuiCond_FirstUseEver);
 
 	bool dev_mode_open = _is_dev_mod;
 	if (ImGui::Begin("Dev Debug", &dev_mode_open))
@@ -292,6 +298,38 @@ void Application::rend_imgui()
 		ImGui::Separator();
 		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
 		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_current_algorithm));
+		ImGui::Text("Move mode: %s", DisplayString::move_mode(_current_move_mod));
+
+		if (_current_algorithm == Algorithm::AStart && _controller != nullptr)
+		{
+			ImGui::Spacing();
+			ImGui::Text("A* Heuristic");
+			ImGui::Separator();
+			int heuristic_index = static_cast<int>(_controller->a_star_heuristic());
+			const bool can_change_heuristic = !_controller->is_board_edit_locked();
+			ImGui::BeginDisabled(!can_change_heuristic);
+			if (ImGui::Combo("Heuristic", &heuristic_index, "Manhattan\0Euclidean\0Octile\0Chebyshev\0\0"))
+			{
+				_controller->set_a_star_heuristic(static_cast<AStarPathfinder::HeuristicMode>(heuristic_index));
+			}
+			ImGui::EndDisabled();
+			ImGui::Text("Current: %s", DisplayString::a_star_heuristic(_controller->a_star_heuristic()));
+			ImGui::TextWrapped("Formula: %s", DisplayString::a_star_heuristic_formula(_controller->a_star_heuristic()));
+		}
+
+		ImGui::Spacing();
+		ImGui::Text("Movement");
+		ImGui::Separator();
+		int move_mode_index = _current_move_mod == MoveMode::EightWay ? 1 : 0;
+		const bool can_change_move_mode = _controller == nullptr || !_controller->is_board_edit_locked();
+		ImGui::BeginDisabled(!can_change_move_mode);
+		if (ImGui::Combo("Move mode", &move_mode_index, "Four Way\0Eight Way\0\0"))
+		{
+			_current_move_mod = move_mode_index == 1 ? MoveMode::EightWay : MoveMode::FourWay;
+			if (_controller != nullptr)
+				_controller->set_move_mode(_current_move_mod);
+		}
+		ImGui::EndDisabled();
 
 		ImGui::Spacing();
 		ImGui::Text("Auto Run");
@@ -316,21 +354,12 @@ void Application::rend_imgui()
 		ImGui::Spacing();
 		ImGui::Text("Tools");
 		ImGui::Separator();
-		float background[3] =
-		{
-			back_ground_color.r / 255.0f,
-			back_ground_color.g / 255.0f,
-			back_ground_color.b / 255.0f
-		};
-		if (ImGui::ColorEdit3("Background", background))
-		{
-			back_ground_color.r = static_cast<Uint8>(background[0] * 255.0f);
-			back_ground_color.g = static_cast<Uint8>(background[1] * 255.0f);
-			back_ground_color.b = static_cast<Uint8>(background[2] * 255.0f);
-		}
-
 		if (ImGui::Button("Reset Board") && _board != nullptr)
+		{
 			_board->reset();
+			if (_controller != nullptr)
+				_controller->restart();
+		}
 		ImGui::SameLine();
 		if (ImGui::Button("Quit"))
 			_active = false;

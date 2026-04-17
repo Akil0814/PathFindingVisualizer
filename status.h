@@ -30,3 +30,9 @@ enum class SimState
 	Running,
 	Finished
 };
+
+enum class MoveMode
+{
+	FourWay,
+	EightWay
+};

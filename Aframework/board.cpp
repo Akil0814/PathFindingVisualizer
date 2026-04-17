@@ -650,6 +650,11 @@ void Board::toggle_show_cost()
     _show_cost = !_show_cost;
 }
 
+void Board::set_edit_locked(bool locked)
+{
+    _on_process = locked;
+}
+
 void Board::set_weight(int weight)
 {
     _input_weight = weight;
