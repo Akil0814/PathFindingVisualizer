@@ -19,6 +19,8 @@
 namespace
 {
 	bool s_imgui_initialized = false;
+	constexpr const char* kMoreInformationUrl = "https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html";
+	constexpr const char* kAboutAuthorUrl = "https://akil0814.github.io/index.html";
 
 	SDL_Rect make_centered_rect(SDL_Rect outer, SDL_Texture* texture, int padding = 8)
 	{
@@ -419,11 +421,27 @@ void Application::rend_imgui()
 	bool dev_mode_open = _is_dev_mod;
 	if (ImGui::Begin("Dev Debug", &dev_mode_open))
 	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(250.0f / 255.0f, 142.0f / 255.0f, 225.0f / 255.0f, 1.0f));
+		ImGui::Text("More information:");
+		if (ImGui::Selectable(kMoreInformationUrl, false))
+			SDL_OpenURL(kMoreInformationUrl);
+		ImGui::Text("About author:");
+		if (ImGui::Selectable(kAboutAuthorUrl, false))
+			SDL_OpenURL(kAboutAuthorUrl);
+		ImGui::PopStyleColor();
+		ImGui::Separator();
+
 		ImGui::Text("Application");
 		ImGui::Separator();
 		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
 		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
 		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
+		int algorithm_index = _controller != nullptr ? static_cast<int>(_controller->algorithm()) : 0;
+		if (ImGui::Combo("Algorithm", &algorithm_index, "A Star\0Dijkstra\0BFS\0Greedy\0\0"))
+		{
+			if (validate_unlocked_operation("Reset or Restart before changing algorithm.") && _controller != nullptr)
+				_controller->set_algorithm(static_cast<Algorithm>(algorithm_index));
+		}
 
 		ImGui::Spacing();
 		ImGui::Text("State Machine");
