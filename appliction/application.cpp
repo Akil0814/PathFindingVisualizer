@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ctime>
 #include<iostream>
+#include <string>
 #include<SDL.h>
 #include <SDL_ttf.h>//字体库
 #include <SDL_mixer.h>//音频库
@@ -34,12 +35,26 @@ namespace
 		}
 	}
 
+	const char* edit_mode_to_string(InPutType input)
+	{
+		switch (input)
+		{
+		case InPutType::Empty: return "Erase";
+		case InPutType::Wall: return "Wall";
+		case InPutType::Start: return "Start";
+		case InPutType::Goal: return "Goal";
+		case InPutType::Weight: return "Weight";
+
+		default: return "Unknown";
+		}
+	}
+
 	const char* algorithm_to_string(Algorithm algorithm)
 	{
 		switch (algorithm)
 		{
 		case Algorithm::AStart: return "A*";
-		case Algorithm::Dijkstar: return "Dijkstar";
+		case Algorithm::Dijkstar: return "Dijkstra";
 		case Algorithm::BFS: return "BFS";
 
 		default: return "Unknown";
@@ -218,7 +233,6 @@ int Application::run(int argc, char** argv)
 	return 0;
 }
 
-
 void Application::on_input()
 {
 	if (_is_dev_mod && ImGui::GetCurrentContext() != nullptr)
@@ -231,20 +245,23 @@ void Application::on_input()
 
 	_board->on_input(_event);
 	_button_manager->on_input(_event);
-	_dev_button_manager->on_input(_event);
+
+	if (_is_dev_mod)
+		_dev_button_manager->on_input(_event);
+
 	_edit_button_manager->on_input(_event);
 }
 
 void Application::on_render()
 {
 	_board->on_render(_renderer);
-	for (const TextLabel& label : _text_labels)
-	{
-		if (label.texture != nullptr)
-			SDL_RenderCopy(_renderer, label.texture, nullptr, &label.rect);
-	}
+
+	render_status_titles();
 	_button_manager->on_render(_renderer);
-	_dev_button_manager->on_render(_renderer);
+
+	if(_is_dev_mod)
+		_dev_button_manager->on_render(_renderer);
+
 	_edit_button_manager->on_render(_renderer);
 	rend_imgui();
 }
@@ -253,7 +270,10 @@ void Application::on_update(double delta)
 {
 	_board->on_update(delta,_current_input);
 	_button_manager->on_update(static_cast<float>(delta));
-	_dev_button_manager->on_update(static_cast<float>(delta));
+
+	if (_is_dev_mod)
+		_dev_button_manager->on_update(static_cast<float>(delta));
+
 	_edit_button_manager->on_update(static_cast<float>(delta));
 }
 
@@ -270,9 +290,7 @@ void Application::init()
 	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
 	init_assert(_title_font != nullptr, TTF_GetError());
 
-
 	init_button();
-	init_text();
 }
 
 void Application::rend_imgui()
@@ -372,6 +390,30 @@ void Application::rend_imgui()
 	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), _renderer);
 }
 
+void Application::render_status_titles()
+{
+	TxtTextureManager& txt_manager = TxtTextureManager::instance();
+	const SDL_Color title_text_color = { 15, 15, 15, 255 };
+
+	auto render_title = [&](const std::string& text, SDL_Point pos)
+		{
+			SDL_Texture* title_texture = txt_manager.get_txt_texture(_renderer, _title_font, text, true, title_text_color);
+			if (title_texture == nullptr)
+				return;
+
+			const SDL_Rect rect = make_label_rect(pos, title_texture);
+			SDL_RenderCopy(_renderer, title_texture, nullptr, &rect);
+		};
+
+	render_title(std::string("EDIT: ") + edit_mode_to_string(_current_input), { 900, 40 });
+	render_title(std::string("Algorithm: ") + algorithm_to_string(_current_algorithm), { 20, 232 });
+	render_title("CONTROL", { 900, 200 });
+	render_title("RESET", { 900, 480 });
+
+	if(_is_dev_mod)
+		render_title("Advance", { 20,454 });
+}
+
 void Application::init_button()
 {
 	Button* tmp;
@@ -439,10 +481,6 @@ void Application::init_button()
 		_current_algorithm = Algorithm::BFS;
 		});
 
-
-
-
-
 	//run time
 	rect_button = { 900,220,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
@@ -469,8 +507,9 @@ void Application::init_button()
 	rect_button = { 900,400,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Prev Step", true));
-	tmp->set_on_click([] {
+	tmp->set_on_click([this] {
 		std::cout << " Prev Step " << std::endl;
+		_board->undo();
 		});
 
 	//board statse
@@ -491,48 +530,25 @@ void Application::init_button()
 		});
 
 
-
 	rect_button = { 20,660,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dev Mode", true));
 	tmp->set_on_click([this] {
-		_is_dev_mod ? _is_dev_mod = false : _is_dev_mod = true;
+		_is_dev_mod = !_is_dev_mod;
 		});
 
 	rect_button = { 20,470,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Change Weight", true));
+	set_button_label(tmp, rect_button, make_text("Eide Weight", true));
 	tmp->set_on_click([this] {
-		_is_dev_mod ? _is_dev_mod = false : _is_dev_mod = true;
+		_current_input = InPutType::Weight;
 		});
 
 	rect_button = { 20,530,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("See Weight", true));
+	set_button_label(tmp, rect_button, make_text("Weight Graph", true));
 	tmp->set_on_click([this] {
-		_is_dev_mod ? _is_dev_mod = false : _is_dev_mod = true;
+		_board->toggle_show_weight();
 		});
-}
-
-void Application::init_text()
-{
-	TxtTextureManager& txt_manager = TxtTextureManager::instance();
-	const SDL_Color button_text_color = { 25, 25, 25, 255 };
-	const SDL_Color title_text_color = { 15, 15, 15, 255 };
-
-	auto add_title = [&](const char* text, SDL_Point pos)
-		{
-			SDL_Texture* title_texture = txt_manager.get_txt_texture(_renderer, _title_font, text, true, title_text_color);
-			_text_labels.push_back({ title_texture, make_label_rect(pos, title_texture) });
-		};
-
-	add_title("EDIT", { 900, 40 });
-	add_title("CONTROL", { 900, 200 });
-	add_title("RESET", { 900, 480 });
-	add_title("Algorithm", { 20,232 });
-
-
-
-	add_title("Advance", { 20,454 });
 }
 

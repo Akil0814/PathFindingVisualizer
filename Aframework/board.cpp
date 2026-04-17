@@ -1,6 +1,7 @@
 #include "board.h"
 #include <cmath>
 #include <SDL_image.h>//图像库
+#include <algorithm>
 
 SDL_Texture* Board::tile_select = nullptr;
 SDL_Texture* Board::tile_start = nullptr;
@@ -41,7 +42,6 @@ void Board::clear_path_data()
 
 }
 
-
 void Board::init(SDL_Renderer* renderer)
 {
 
@@ -80,14 +80,14 @@ void Board::on_render(SDL_Renderer* renderer)
     SDL_Rect detail = { 20,20,150,150 };
     SDL_RenderFillRect(renderer, &detail);
 
+
     for (int y = 0; y < _row; ++y)
     {
         for (int x = 0; x < _col; ++x)
         {
             Tile::Status status = _board[y][x].get_status();
 
-            if (status == Tile::Status::Empty)
-                continue;
+
 
             SDL_Rect rect =
             {
@@ -96,31 +96,54 @@ void Board::on_render(SDL_Renderer* renderer)
                 SIZE_TILE - 4,
                 SIZE_TILE - 4
             };
+            
+
+            if (_show_weight && status != Tile::Status::Wall)
+            {
+                int w = _board[y][x]._weight;
+
+                SDL_Color color = { 0, 0, 0, 255 };
+
+                if (w <= 1)       color = { 60, 110, 70, 255 };
+                else if (w == 2)  color = { 75, 118, 76, 255 };
+                else if (w == 3)  color = { 90, 112, 80, 255 };
+                else if (w == 4)  color = { 104, 106, 82, 255 };
+                else if (w == 5)  color = { 118, 100, 84, 255 };
+                else if (w == 6)  color = { 126, 92, 82, 255 };
+                else if (w == 7)  color = { 132, 84, 78, 255 };
+                else if (w == 8)  color = { 136, 74, 72, 255 };
+                else if (w == 9)  color = { 139, 64, 64, 255 };
+                else              color = { 142, 56, 56, 255 };
+
+                SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+                SDL_RenderFillRect(renderer, &rect);
+            }
+
 
             switch (status)
             {
             case Tile::Status::Wall:
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);       // black
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 break;
 
             case Tile::Status::Start:
-                SDL_RenderCopy(renderer, tile_start, nullptr, &rect);    // red
+                SDL_RenderCopy(renderer, tile_start, nullptr, &rect);
                 continue;
 
             case Tile::Status::Goal:
-                SDL_RenderCopy(renderer, tile_end, nullptr, &rect);   // green
+                SDL_RenderCopy(renderer, tile_end, nullptr, &rect);
                 continue;
 
             case Tile::Status::Open:
-                SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);   // cyan
+                SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);
                 break;
 
             case Tile::Status::Closed:
-                SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);   // orange
+                SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);
                 break;
 
             case Tile::Status::Path:
-                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);     // blue
+                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                 break;
 
             default:
@@ -305,6 +328,8 @@ void Board::on_mouse_click(const SDL_Event& event)
     default:
         break;
     }
+
+    tile._weight = _input_weight;
 }
 
 void Board::on_mouse_move(const SDL_Event& event)
@@ -352,4 +377,28 @@ void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
         SIZE_TILE
     };
     SDL_RenderCopy(renderer, tile_select, nullptr, &rect);
+}
+
+void Board::undo()
+{
+    if (_board_snapshot.empty())
+        return;
+
+    _board = std::move(_board_snapshot.back());
+    _board_snapshot.pop_back();
+}
+
+void Board::save_snapshot()
+{
+    _board_snapshot.push_back(_board);
+}
+
+void Board::toggle_show_weight()
+{
+    _show_weight = !_show_weight;
+}
+
+void Board::set_weight(int weight)
+{
+    _input_weight = weight;
 }

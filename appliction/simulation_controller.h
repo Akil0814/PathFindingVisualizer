@@ -4,7 +4,8 @@
 class SimulationController
 {
 public:
-    void update(double delta);
+    void on_update(double delta);
+
     void next_step();
     void pause();
     void restart();

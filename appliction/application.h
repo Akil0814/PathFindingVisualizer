@@ -8,12 +8,6 @@
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
 
-struct TextLabel
-{
-	SDL_Texture* texture = nullptr;
-	SDL_Rect rect = {};
-};
-
 class Application
 {
 public:
@@ -25,13 +19,13 @@ private:
 
 	void init();
 	void init_button();
-	void init_text();
 
 	void on_render();
 	void on_update(double delta);
 	void on_input();
 
 	void rend_imgui();
+	void render_status_titles();
 
 	void init_assert(bool flag, const char* err_msg)
 	{
@@ -52,8 +46,6 @@ private:
 	ButtonManager* _edit_button_manager;
 	ButtonManager* _dev_button_manager;
 
-	std::vector<TextLabel> _text_labels;
-
 private:
 	static Application* _instance;
 
@@ -61,8 +53,11 @@ private:
 	Algorithm _current_algorithm = Algorithm::AStart;
 	PlayMode _current_play_mod = PlayMode::Idle;
 
+	int _input_weight = 1;
+
 	bool _active = { true };
 	bool _is_dev_mod = { false };
+	bool _show_weight_graph = { false };
 
 	int _width = 1080;
 	int _height = 720;

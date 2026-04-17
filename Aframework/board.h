@@ -22,12 +22,19 @@ public:
 	void reset();
 	void clear_path_data();
 
+	void toggle_show_weight();
+
+	void undo();
+
 	void set_size(int row, int col);
 	void set_board_pos(SDL_Point point);
+	void set_weight(int weight);
 
 	bool is_inside(int x, int y) const;
+	void save_snapshot();
 
 private:
+
 
 	void draw_board(SDL_Renderer* renderer);
 	void draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos);
@@ -43,8 +50,11 @@ private:
 private:
 	bool _move_in_board = false;
 	bool _click_in_board = false;
+	bool _show_weight = false;
 
 	bool _on_process = false;
+
+	int _input_weight = 1;
 
 	int _index_x = -1;
 	int _index_y = -1;
@@ -53,6 +63,7 @@ private:
 	int _col = 20;
 
 	TileBoard _board;
+	std::vector<TileBoard> _board_snapshot;
 	InPutType _current_input = InPutType::Empty;
 
 	SDL_Point _start_pos_index = { -1, -1 };

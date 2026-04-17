@@ -4,7 +4,8 @@
 class Tile
 {
 public:
-    enum class Status {
+    enum class Status
+    {
         Empty,      // Walkable tile
         Wall,       // Blocked tile
         Start,      // Starting point
@@ -25,6 +26,7 @@ public:
     {
         return _status;
     }
+
 public:
     int _g_cost = 0;
     int _h_cost = 0;
@@ -32,9 +34,9 @@ public:
 
     int _weight = 1;
 
-private:
+    SDL_Point _parent = { -1, -1 };
 
+private:
     Status _status = Status::Empty;
-    Tile* _parent = nullptr;
 
 };
