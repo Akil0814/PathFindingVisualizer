@@ -4,6 +4,7 @@
 #include "../imgui/imgui_impl_sdl2.h"
 #include "../imgui/imgui_impl_sdlrenderer2.h"
 #include "../Aframework/txt_texture_manager.h"
+#include "../utils/display_string.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -20,47 +21,6 @@ Application* Application::_instance = nullptr;
 namespace
 {
 	bool s_imgui_initialized = false;
-
-	const char* input_type_to_string(InPutType input)
-	{
-		switch (input)
-		{
-		case InPutType::Empty: return "Empty";
-		case InPutType::Wall: return "Wall";
-		case InPutType::Start: return "Start";
-		case InPutType::Goal: return "Goal";
-		case InPutType::Weight: return "Weight";
-
-		default: return "Unknown";
-		}
-	}
-
-	const char* edit_mode_to_string(InPutType input)
-	{
-		switch (input)
-		{
-		case InPutType::Empty: return "Erase";
-		case InPutType::Wall: return "Wall";
-		case InPutType::Start: return "Start";
-		case InPutType::Goal: return "Goal";
-		case InPutType::Weight: return "Weight";
-
-		default: return "Unknown";
-		}
-	}
-
-	const char* algorithm_to_string(Algorithm algorithm)
-	{
-		switch (algorithm)
-		{
-		case Algorithm::AStart: return "A*";
-		case Algorithm::Dijkstar: return "Dijkstra";
-		case Algorithm::BFS: return "BFS";
-		case Algorithm::Greedy: return "Greedy";
-
-		default: return "Unknown";
-		}
-	}
 
 	SDL_Rect make_centered_rect(SDL_Rect outer, SDL_Texture* texture, int padding = 8)
 	{
@@ -269,6 +229,7 @@ void Application::on_render()
 void Application::on_update(double delta)
 {
 	_board->on_update(delta,_current_input);
+	_controller->on_update(delta);
 	_button_manager->on_update(static_cast<float>(delta));
 
 	if (_is_dev_mod)
@@ -280,6 +241,8 @@ void Application::on_update(double delta)
 void Application::init()
 {
 	_board = new Board();
+	_controller = new SimulationController(_board);
+	_controller->set_auto_run_speed(_auto_run_speed);
 	_button_manager = new ButtonManager();
 	_dev_button_manager = new ButtonManager();
 	_edit_button_manager = new ButtonManager();
@@ -289,6 +252,7 @@ void Application::init()
 	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
 	init_assert(_title_font != nullptr, TTF_GetError());
 	_board->init(_renderer, _title_font);
+	_number_renderer = std::make_unique<NumberRenderer>(_renderer, _title_font, SDL_Color{ 15, 15, 15, 255 });
 
 	init_button();
 }
@@ -314,15 +278,21 @@ void Application::rend_imgui()
 	SDL_GetMouseState(&mouse_x, &mouse_y);
 
 	ImGui::SetNextWindowPos(ImVec2(15.0f, 15.0f), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(300.0f, 260.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(300.0f, 300.0f), ImGuiCond_FirstUseEver);
 
 	bool dev_mode_open = _is_dev_mod;
 	if (ImGui::Begin("Dev Debug", &dev_mode_open))
 	{
 		ImGui::Text("Application");
 		ImGui::Separator();
-		ImGui::Text("Input mode: %s", input_type_to_string(_current_input));
-		ImGui::Text("Algorithm: %s", algorithm_to_string(_current_algorithm));
+		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
+		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_current_algorithm));
+
+		ImGui::Spacing();
+		ImGui::Text("Auto Run");
+		ImGui::Separator();
+		if (ImGui::SliderFloat("Speed", &_auto_run_speed, 1.0f, 30.0f, "%.0f steps/s") && _controller != nullptr)
+			_controller->set_auto_run_speed(_auto_run_speed);
 
 		ImGui::Spacing();
 		ImGui::Text("Weight Brush");
@@ -383,14 +353,21 @@ void Application::render_status_titles()
 			SDL_RenderCopy(_renderer, title_texture, nullptr, &rect);
 		};
 
-	render_title(std::string("Edit mode: ") + edit_mode_to_string(_current_input), { 900, 40 });
-	render_title(std::string("Alg using: ") + algorithm_to_string(_current_algorithm), { 20, 202 });
+	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 40 });
+	render_title(std::string("Alg using: ") + DisplayString::algorithm(_current_algorithm), { 20, 212 });
 
 	render_title("Control", { 900, 200 });
 	render_title("Reset", { 900, 480 });
 
-	render_title("Total Steps:", { 20, 150 });//一共走了多少格子
-	render_title("Total Cost:", { 20, 170 });//这条路径的总花费
+	const int total_steps = _controller != nullptr ? _controller->total_steps() : 0;
+	const int total_cost = _controller != nullptr ? _controller->total_cost() : 0;
+	render_title("Total Steps:", { 20, 170 });//一共走了多少格子
+	render_title("Total Cost:", { 20, 190 });//这条路径的总花费
+	if (_number_renderer != nullptr)
+	{
+		_number_renderer->render_number(total_steps, { 150, 168, 42, 18 });
+		_number_renderer->render_number(total_cost, { 140, 188, 52, 18 });
+	}
 
 	if(_is_dev_mod)
 		render_title("Advance", { 20,504 });
@@ -413,7 +390,6 @@ void Application::init_button()
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Start", true));
 	tmp->set_on_click([&] {
-		std::cout << "start point " << std::endl;
 		_current_input = InPutType::Start;
 		});
 
@@ -421,7 +397,6 @@ void Application::init_button()
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Goal", true));
 	tmp->set_on_click([&] {
-		std::cout << "end point " << std::endl;
 		_current_input = InPutType::Goal;
 		});
 
@@ -429,7 +404,6 @@ void Application::init_button()
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Wall", true));
 	tmp->set_on_click([&] {
-		std::cout << "wall " << std::endl;
 		_current_input = InPutType::Wall;
 
 		});
@@ -438,50 +412,56 @@ void Application::init_button()
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("ERASE", true));
 	tmp->set_on_click([&] {
-		std::cout << "ERASE " << std::endl;
 		_current_input = InPutType::Empty;
 		});
 
-	rect_button = { 20,220,150,50 };
+	rect_button = { 20,230,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::AStart;
+		_controller->set_algorithm(_current_algorithm);
 		});
 
-	rect_button = { 20,280,150,50 };
+	rect_button = { 20,290,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::Dijkstar;
+		_controller->set_algorithm(_current_algorithm);
 		});
 
-	rect_button = { 20,340,150,50 };
+	rect_button = { 20,350,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::BFS;
+		_controller->set_algorithm(_current_algorithm);
 		});
 
-	rect_button = { 20,400,150,50 };
+	rect_button = { 20,410,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::Greedy;
+		_controller->set_algorithm(_current_algorithm);
 		});
 	//run time
 	rect_button = { 900,220,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Auto Run", true));
-	tmp->set_on_click([] {
+	tmp->set_on_click([this] {
 		std::cout << "start " << std::endl;
+		_current_play_mod = PlayMode::AutoRun;
+		_controller->set_auto_run(true);
 		});
 
 	rect_button = { 900,280,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Pause", true));
-	tmp->set_on_click([] {
-		std::cout << " Pause " << std::endl;
+	tmp->set_on_click([this] {
+		_current_play_mod = PlayMode::Pause;
+		_controller->pause();
 		});
 
 	rect_button = { 900,340,150,50 };
@@ -489,7 +469,7 @@ void Application::init_button()
 	set_button_label(tmp, rect_button, make_text("Next Step", true));
 	tmp->set_on_click([this] {
 		std::cout << "Next Step" << std::endl;
-		_board->clear_path_data();
+		_controller->next_step();
 		});
 
 	rect_button = { 900,400,150,50 };
@@ -506,7 +486,7 @@ void Application::init_button()
 	set_button_label(tmp, rect_button, make_text("Restart", true));
 	tmp->set_on_click([this] {
 		std::cout << "restart " << std::endl;
-		_board->clear_path_data();
+		_controller->restart();
 		});
 
 	rect_button = { 900,560,150,50 };
@@ -515,6 +495,7 @@ void Application::init_button()
 	tmp->set_on_click([this] {
 		std::cout << "reset " << std::endl;
 		_board->reset();
+		_controller->restart();
 		});
 
 

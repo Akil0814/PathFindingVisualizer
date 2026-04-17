@@ -25,7 +25,7 @@ public:
         return _found_path;
     }
 
-private:
+protected:
 	Board* _board = nullptr;
 
 	bool _finished = false;

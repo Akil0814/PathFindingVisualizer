@@ -3,6 +3,7 @@
 #include <SDL_ttf.h>
 
 #include <array>
+#include <string>
 
 class NumberRenderer
 {
@@ -19,10 +20,12 @@ public:
 private:
 	void clear();
 	SDL_Texture* create_digit_texture(int digit) const;
+	SDL_Texture* create_text_texture(const std::string& text) const;
 
 private:
 	SDL_Renderer* _renderer = nullptr;
 	TTF_Font* _font = nullptr;
 	SDL_Color _color = { 0, 0, 0, 255 };
 	std::array<SDL_Texture*, 10> _digit_textures = {};
+	SDL_Texture* _minus_texture = nullptr;
 };

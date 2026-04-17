@@ -5,6 +5,7 @@
 #include <SDL_ttf.h>
 
 #include"../status.h"
+#include "grid_point.h"
 #include "number_renderer.h"
 #include "tile.h"
 
@@ -30,9 +31,10 @@ public:
 
 	void undo();
 
-	void set_size(int row, int col);
-	void set_board_pos(SDL_Point point);
 	void set_weight(int weight);
+
+	Point get_start_point();
+	Point get_end_point();
 
 	bool is_inside(int x, int y) const;
 	void save_snapshot();
@@ -42,19 +44,27 @@ private:
 
 	void draw_board(SDL_Renderer* renderer);
 	void draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos);
+	bool draw_directed_tile(SDL_Renderer* renderer, Tile::Status status, const Tile& tile, int x, int y, const SDL_Rect& rect);
+	SDL_Texture* get_directed_tile_texture(Tile::Status status, bool diagonal) const;
 	void draw_tile_info_panel(SDL_Renderer* renderer);
 	void render_info_label(SDL_Renderer* renderer, const char* text, SDL_Point pos);
 	void render_info_number(int value, const SDL_Rect& rect) const;
 
 	void on_mouse_click(const SDL_Event& event);
 	void on_mouse_move(const SDL_Event& event);
-	SDL_Point get_tile_index_at(int x, int y) const;
-	bool is_valid_tile_index(SDL_Point index) const;
+	Point get_tile_index_at(int x, int y) const;
+	bool is_valid_tile_index(Point index) const;
 
 private:
 	static SDL_Texture* tile_select;
 	static SDL_Texture* tile_start;
 	static SDL_Texture* tile_end;
+	static SDL_Texture* tile_open;
+	static SDL_Texture* tile_open_rot45;
+	static SDL_Texture* tile_path;
+	static SDL_Texture* tile_path_rot45;
+	static SDL_Texture* tile_stop;
+	static SDL_Texture* tile_stop_rot45;
 
 private:
 	bool _move_in_board = false;
@@ -79,11 +89,11 @@ private:
 	std::unique_ptr<NumberRenderer> _number_renderer;
 	TTF_Font* _info_font = nullptr;
 
-	SDL_Point _start_pos_index = { -1, -1 };
-	SDL_Point _end_pos_index = { -1, -1 };
+	Point _start_pos_index = { -1, -1 };
+	Point _end_pos_index = { -1, -1 };
 
 	SDL_Point _board_render_pos = { 0, 0 };
 	SDL_Point _mouse_pos = { 0, 0 };
 	SDL_Point _mouse_click_tile_center = { 0, 0 };
-	SDL_Point _info_tile_index = { -1, -1 };
+	Point _info_tile_index = { -1, -1 };
 };

@@ -1,4 +1,6 @@
 #pragma once
+#include "grid_point.h"
+
 #define SIZE_TILE 34
 
 class Tile
@@ -6,13 +8,13 @@ class Tile
 public:
     enum class Status
     {
-        Empty,      // Walkable tile
-        Wall,       // Blocked tile
-        Start,      // Starting point
-        Goal,       // Target point
-        Open,       // Discovered but not processed yet
-        Closed,     // Already processed
-        Path        // Final path
+        Empty,
+        Wall,
+        Start,
+        Goal,
+        Open,
+        Closed,
+        Path
     };
 
     Tile() = default;
@@ -27,16 +29,28 @@ public:
         return _status;
     }
 
+    void set_parent(Point p)
+    {
+        _parent = p;
+    }
+
+    Point get_parent() const
+    {
+        return _parent;
+    }
+
+    void clear_parent()
+    {
+        _parent = { -1, -1 };
+    }
+
 public:
     int _g_cost = 0;
     int _h_cost = 0;
     int _f_cost = 0;
-
     int _weight = 1;
-
-    SDL_Point _parent = { -1, -1 };
+    Point _parent{ -1, -1 };
 
 private:
     Status _status = Status::Empty;
-
 };

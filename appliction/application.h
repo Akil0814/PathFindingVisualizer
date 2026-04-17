@@ -2,11 +2,14 @@
 #include<SDL.h>
 #include <SDL_ttf.h>
 
+#include <memory>
 #include <vector>
 
 #include "../status.h"
 #include "../Aframework/board.h"
 #include "../Aframework/button_manager.h"
+#include "../Aframework/number_renderer.h"
+#include "simulation_controller.h"
 
 class Application
 {
@@ -40,11 +43,12 @@ private:
 	~Application();
 
 private:
-	Board* _board;
-
-	ButtonManager* _button_manager;
-	ButtonManager* _edit_button_manager;
-	ButtonManager* _dev_button_manager;
+	Board* _board = nullptr;
+	SimulationController* _controller = nullptr;
+	ButtonManager* _button_manager = nullptr;
+	ButtonManager* _edit_button_manager = nullptr;
+	ButtonManager* _dev_button_manager = nullptr;
+	std::unique_ptr<NumberRenderer> _number_renderer;
 
 private:
 	static Application* _instance;
@@ -54,6 +58,7 @@ private:
 	PlayMode _current_play_mod = PlayMode::Idle;
 
 	int _input_weight = 1;
+	float _auto_run_speed = 10.0f;
 
 	bool _active = { true };
 	bool _is_dev_mod = { false };

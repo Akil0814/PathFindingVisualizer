@@ -1,5 +1,6 @@
 #include "board.h"
 #include "txt_texture_manager.h"
+#include "../utils/display_string.h"
 
 #include <cmath>
 #include <SDL_image.h>//图像库
@@ -8,6 +9,12 @@
 SDL_Texture* Board::tile_select = nullptr;
 SDL_Texture* Board::tile_start = nullptr;
 SDL_Texture* Board::tile_end = nullptr;
+SDL_Texture* Board::tile_open = nullptr;
+SDL_Texture* Board::tile_open_rot45 = nullptr;
+SDL_Texture* Board::tile_path = nullptr;
+SDL_Texture* Board::tile_path_rot45 = nullptr;
+SDL_Texture* Board::tile_stop = nullptr;
+SDL_Texture* Board::tile_stop_rot45 = nullptr;
 
 namespace
 {
@@ -24,20 +31,15 @@ namespace
         return { pos.x, pos.y, texture_width, texture_height };
     }
 
-    const char* tile_status_to_string(Tile::Status status)
+    int direction_sign(int value)
     {
-        switch (status)
-        {
-        case Tile::Status::Empty: return "Empty";
-        case Tile::Status::Wall: return "Wall";
-        case Tile::Status::Start: return "Start";
-        case Tile::Status::Goal: return "Goal";
-        case Tile::Status::Open: return "Open";
-        case Tile::Status::Closed: return "Closed";
-        case Tile::Status::Path: return "Path";
+        if (value > 0)
+            return 1;
 
-        default: return "Unknown";
-        }
+        if (value < 0)
+            return -1;
+
+        return 0;
     }
 }
 
@@ -78,6 +80,32 @@ void Board::clear_path_data()
 {
     _board_snapshot.clear();
 
+    for (auto& row : _board)
+    {
+        for (auto& tile : row)
+        {
+            tile._g_cost = 0;
+            tile._h_cost = 0;
+            tile._f_cost = 0;
+            tile._parent = { -1, -1 };
+
+            const Tile::Status status = tile.get_status();
+            if (status == Tile::Status::Open ||
+                status == Tile::Status::Closed ||
+                status == Tile::Status::Path)
+            {
+                tile.change_status(Tile::Status::Empty);
+            }
+        }
+    }
+
+    if (is_valid_tile_index(_start_pos_index))
+        _board[_start_pos_index.y][_start_pos_index.x].change_status(Tile::Status::Start);
+
+    if (is_valid_tile_index(_end_pos_index))
+        _board[_end_pos_index.y][_end_pos_index.x].change_status(Tile::Status::Goal);
+
+    _on_process = false;
 }
 
 void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
@@ -109,6 +137,12 @@ void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
     tile_select = load_texture("assets/texture/tile_select.png");
     tile_start = load_texture("assets/texture/tile_start_pos.png");
     tile_end = load_texture("assets/texture/tile_end_pos.png");
+    tile_open = load_texture("assets/texture/tile_open.png");
+    tile_open_rot45 = load_texture("assets/texture/tile_open_rot45.png");
+    tile_path = load_texture("assets/texture/tile_path.png");
+    tile_path_rot45 = load_texture("assets/texture/tile_path_rot45.png");
+    tile_stop = load_texture("assets/texture/tile_stop.png");
+    tile_stop_rot45 = load_texture("assets/texture/tile_stop_rot45.png");
 
 }
 
@@ -171,14 +205,23 @@ void Board::on_render(SDL_Renderer* renderer)
                 continue;
 
             case Tile::Status::Open:
+                if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                    continue;
+
                 SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);
                 break;
 
             case Tile::Status::Closed:
+                if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                    continue;
+
                 SDL_SetRenderDrawColor(renderer, 255, 200, 0, 255);
                 break;
 
             case Tile::Status::Path:
+                if (draw_directed_tile(renderer, status, _board[y][x], x, y, rect))
+                    continue;
+
                 SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                 break;
 
@@ -204,16 +247,6 @@ void Board::on_input(const SDL_Event& event)
     on_mouse_click(event);
 }
 
-void Board::set_size(int row, int col)
-{
-
-}
-
-void Board::set_board_pos(SDL_Point point)
-{
-
-}
-
 bool Board::is_inside(int x, int y) const
 {
     return x >= _board_render_pos.x
@@ -223,7 +256,7 @@ bool Board::is_inside(int x, int y) const
 
 }
 
-SDL_Point Board::get_tile_index_at(int x, int y) const
+Point Board::get_tile_index_at(int x, int y) const
 {
     if (!is_inside(x, y))
         return { -1, -1 };
@@ -235,7 +268,7 @@ SDL_Point Board::get_tile_index_at(int x, int y) const
     };
 }
 
-bool Board::is_valid_tile_index(SDL_Point index) const
+bool Board::is_valid_tile_index(Point index) const
 {
     return index.x >= 0 && index.x < _col
         && index.y >= 0 && index.y < _row;
@@ -278,9 +311,69 @@ void Board::draw_board(SDL_Renderer* renderer)
     }
 }
 
+bool Board::draw_directed_tile(SDL_Renderer* renderer, Tile::Status status, const Tile& tile, int x, int y, const SDL_Rect& rect)
+{
+    if (renderer == nullptr || tile._parent.x < 0 || tile._parent.y < 0)
+        return false;
+
+    const int dx = direction_sign(tile._parent.x - x);
+    const int dy = direction_sign(tile._parent.y - y);
+
+    if (dx == 0 && dy == 0)
+        return false;
+
+    const bool diagonal = dx != 0 && dy != 0;
+    SDL_Texture* texture = get_directed_tile_texture(status, diagonal);
+
+    if (texture == nullptr)
+        return false;
+
+    double angle = 0.0;
+
+    if (diagonal)
+    {
+        if (dx == 1 && dy == 1)
+            angle = 90.0;
+        else if (dx == -1 && dy == 1)
+            angle = 180.0;
+        else if (dx == -1 && dy == -1)
+            angle = 270.0;
+    }
+    else
+    {
+        if (dx == 1)
+            angle = 90.0;
+        else if (dy == 1)
+            angle = 180.0;
+        else if (dx == -1)
+            angle = 270.0;
+    }
+
+    SDL_RenderCopyEx(renderer, texture, nullptr, &rect, angle, nullptr, SDL_FLIP_NONE);
+    return true;
+}
+
+SDL_Texture* Board::get_directed_tile_texture(Tile::Status status, bool diagonal) const
+{
+    switch (status)
+    {
+    case Tile::Status::Open:
+        return diagonal ? tile_open_rot45 : tile_open;
+
+    case Tile::Status::Closed:
+        return diagonal ? tile_stop_rot45 : tile_stop;
+
+    case Tile::Status::Path:
+        return diagonal ? tile_path_rot45 : tile_path;
+
+    default:
+        return nullptr;
+    }
+}
+
 void Board::draw_tile_info_panel(SDL_Renderer* renderer)
 {
-    const SDL_Rect panel_rect = { 12, 6, 186, 132 };
+    const SDL_Rect panel_rect = { 12, 6, 186, 152 };
     SDL_SetRenderDrawColor(renderer, 205, 205, 205, 255);
     SDL_RenderFillRect(renderer, &panel_rect);
 
@@ -290,10 +383,12 @@ void Board::draw_tile_info_panel(SDL_Renderer* renderer)
     render_info_label(renderer, "F:", { 20, 70 });
     render_info_label(renderer, "weight:", { 20, 90 });
     render_info_label(renderer, "Status:", { 20, 110 });
+    render_info_label(renderer, "Parent:", { 20, 130 });
 
     if (!is_valid_tile_index(_info_tile_index))
     {
         render_info_label(renderer, "None", { 85, 110 });
+        render_info_label(renderer, "None", { 85, 130 });
         return;
     }
 
@@ -308,7 +403,11 @@ void Board::draw_tile_info_panel(SDL_Renderer* renderer)
     render_info_number(tile._h_cost, { 56, 48, 64, 18 });
     render_info_number(tile._f_cost, { 56, 68, 64, 18 });
     render_info_number(tile._weight, { 94, 88, 36, 18 });
-    render_info_label(renderer, tile_status_to_string(tile.get_status()), { 85, 110 });
+    render_info_label(renderer, DisplayString::tile_status(tile.get_status()), { 85, 110 });
+    render_info_label(renderer, "X:", { 85, 130 });
+    render_info_number(tile._parent.x, { 104, 128, 28, 18 });
+    render_info_label(renderer, "Y:", { 136, 130 });
+    render_info_number(tile._parent.y, { 154, 128, 28, 18 });
 }
 
 void Board::render_info_label(SDL_Renderer* renderer, const char* text, SDL_Point pos)
@@ -369,7 +468,7 @@ void Board::on_mouse_click(const SDL_Event& event)
     if (!should_paint || !is_inside(mouse_x, mouse_y))
         return;
 
-    const SDL_Point tile_index = get_tile_index_at(mouse_x, mouse_y);
+    const Point tile_index = get_tile_index_at(mouse_x, mouse_y);
 
     if (!is_valid_tile_index(tile_index))
         return;
@@ -469,7 +568,7 @@ void Board::draw_mouse_pos_tile(SDL_Renderer* renderer, SDL_Point pos)
     if (!_move_in_board || tile_select == nullptr)
         return;
 
-    SDL_Point grid_pos = { 0 };
+    Point grid_pos = { 0, 0 };
 
     if (pos.x - _board_render_pos.x < -(SIZE_TILE / 2) || pos.y - _board_render_pos.y < -(SIZE_TILE / 2))
     {
@@ -523,4 +622,14 @@ void Board::toggle_show_cost()
 void Board::set_weight(int weight)
 {
     _input_weight = weight;
+}
+
+Point Board::get_start_point()
+{
+    return _start_pos_index;
+}
+
+Point Board::get_end_point()
+{
+    return _end_pos_index;
 }

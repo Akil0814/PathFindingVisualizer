@@ -15,6 +15,8 @@ NumberRenderer::NumberRenderer(SDL_Renderer* renderer, TTF_Font* font, SDL_Color
 
 	for (int digit = 0; digit < 10; ++digit)
 		_digit_textures[digit] = create_digit_texture(digit);
+
+	_minus_texture = create_text_texture("-");
 }
 
 NumberRenderer::~NumberRenderer()
@@ -27,11 +29,7 @@ void NumberRenderer::render_number(int value, const SDL_Rect& rect) const
 	if (!is_valid() || rect.w <= 0 || rect.h <= 0)
 		return;
 
-	long long number = value;
-	if (number < 0)
-		number = -number;
-
-	std::string text = std::to_string(number);
+	std::string text = std::to_string(value);
 	if (text.empty())
 		text = "0";
 
@@ -45,13 +43,26 @@ void NumberRenderer::render_number(int value, const SDL_Rect& rect) const
 
 	for (char ch : text)
 	{
-		const int digit = ch - '0';
-		if (digit < 0 || digit > 9 || _digit_textures[digit] == nullptr)
+		SDL_Texture* texture = nullptr;
+		if (ch == '-')
+		{
+			texture = _minus_texture;
+		}
+		else
+		{
+			const int digit = ch - '0';
+			if (digit < 0 || digit > 9)
+				return;
+
+			texture = _digit_textures[digit];
+		}
+
+		if (texture == nullptr)
 			return;
 
 		int digit_width = 0;
 		int digit_height = 0;
-		if (SDL_QueryTexture(_digit_textures[digit], nullptr, nullptr, &digit_width, &digit_height) != 0)
+		if (SDL_QueryTexture(texture, nullptr, nullptr, &digit_width, &digit_height) != 0)
 			return;
 
 		widths.push_back(digit_width);
@@ -76,7 +87,23 @@ void NumberRenderer::render_number(int value, const SDL_Rect& rect) const
 
 	for (std::size_t i = 0; i < text.size(); ++i)
 	{
-		const int digit = text[i] - '0';
+		SDL_Texture* texture = nullptr;
+		if (text[i] == '-')
+		{
+			texture = _minus_texture;
+		}
+		else
+		{
+			const int digit = text[i] - '0';
+			if (digit < 0 || digit > 9)
+				return;
+
+			texture = _digit_textures[digit];
+		}
+
+		if (texture == nullptr)
+			return;
+
 		const int digit_width = std::max(1, static_cast<int>(widths[i] * scale));
 		const int digit_height = std::max(1, static_cast<int>(heights[i] * scale));
 		const SDL_Rect dst =
@@ -87,7 +114,7 @@ void NumberRenderer::render_number(int value, const SDL_Rect& rect) const
 			digit_height
 		};
 
-		SDL_RenderCopy(_renderer, _digit_textures[digit], nullptr, &dst);
+		SDL_RenderCopy(_renderer, texture, nullptr, &dst);
 		x += digit_width;
 	}
 }
@@ -103,7 +130,7 @@ bool NumberRenderer::is_valid() const
 			return false;
 	}
 
-	return true;
+	return _minus_texture != nullptr;
 }
 
 void NumberRenderer::clear()
@@ -116,15 +143,25 @@ void NumberRenderer::clear()
 			texture = nullptr;
 		}
 	}
+
+	if (_minus_texture != nullptr)
+	{
+		SDL_DestroyTexture(_minus_texture);
+		_minus_texture = nullptr;
+	}
 }
 
 SDL_Texture* NumberRenderer::create_digit_texture(int digit) const
 {
-	const std::string text = std::to_string(digit);
+	return create_text_texture(std::to_string(digit));
+}
+
+SDL_Texture* NumberRenderer::create_text_texture(const std::string& text) const
+{
 	SDL_Surface* surface = TTF_RenderUTF8_Blended(_font, text.c_str(), _color);
 	if (surface == nullptr)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to render digit %d: %s", digit, TTF_GetError());
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to render number glyph \"%s\": %s", text.c_str(), TTF_GetError());
 		return nullptr;
 	}
 
@@ -133,7 +170,7 @@ SDL_Texture* NumberRenderer::create_digit_texture(int digit) const
 
 	if (texture == nullptr)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to create digit texture %d: %s", digit, SDL_GetError());
+		SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to create number glyph texture \"%s\": %s", text.c_str(), SDL_GetError());
 		return nullptr;
 	}
 
