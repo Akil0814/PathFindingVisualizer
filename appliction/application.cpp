@@ -492,6 +492,7 @@ void Application::init_button()
 	set_button_label(tmp, rect_button, make_text("Restart", true));
 	tmp->set_on_click([this] {
 		std::cout << "restart " << std::endl;
+		_current_play_mod = PlayMode::Idle;
 		_controller->restart();
 		});
 
@@ -500,6 +501,7 @@ void Application::init_button()
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
 		std::cout << "reset " << std::endl;
+		_current_play_mod = PlayMode::Idle;
 		_board->reset();
 		_controller->restart();
 		});
