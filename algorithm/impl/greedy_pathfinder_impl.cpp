@@ -2,6 +2,7 @@
 
 void GreedyPathfinder::next_step()
 {
+    // Greedy best-first search expands the tile that looks closest to the goal.
     if (is_finished())
         return;
 
@@ -12,7 +13,8 @@ void GreedyPathfinder::next_step()
     if (current_board == nullptr || is_finished())
         return;
 
-    close_current_tile();
+    // Finish the previously highlighted tile before selecting the next heuristic winner.
+    close_current_tile(_current);
 
     if (_open_set.empty())
     {
@@ -23,6 +25,7 @@ void GreedyPathfinder::next_step()
     const Point current = _open_set.top().point;
     _open_set.pop();
 
+    // Greedy stops as soon as it reaches the goal, but the route is not guaranteed optimal.
     if (same_point(current, _goal))
     {
         mark_finished(rebuild_path(_start, _goal));
@@ -34,6 +37,7 @@ void GreedyPathfinder::next_step()
     _current = current;
 
     const HeuristicMode heuristic_mode = default_heuristic_mode();
+    // Visit each tile once, prioritizing by h cost rather than accumulated path cost.
     for (const Point next : neighbors(current))
     {
         if (_visited[next.y][next.x])
@@ -54,6 +58,7 @@ void GreedyPathfinder::next_step()
 
 void GreedyPathfinder::initialize()
 {
+    // The visited grid prevents Greedy from cycling back through already queued tiles.
     _initialized = true;
     _current = { -1, -1 };
 
@@ -71,6 +76,7 @@ void GreedyPathfinder::initialize()
     while (!_open_set.empty())
         _open_set.pop();
 
+    // The start is queued with only its heuristic score.
     const int start_h_cost = heuristic_cost(_start, _goal, default_heuristic_mode());
     clear_tile_path_data(_start);
     set_tile_costs(_start, 0, start_h_cost);
@@ -78,17 +84,8 @@ void GreedyPathfinder::initialize()
     _open_set.push({ _start, start_h_cost });
 }
 
-void GreedyPathfinder::close_current_tile()
-{
-    Board* current_board = board();
-    if (current_board == nullptr || !current_board->in_bounds(_current))
-        return;
-
-    mark_tile_closed(_current);
-    _current = { -1, -1 };
-}
-
 HeuristicMode GreedyPathfinder::default_heuristic_mode() const
 {
+    // Match the heuristic shape to the movement model used by the board.
     return move_mode() == MoveMode::EightWay ? HeuristicMode::Chebyshev : HeuristicMode::Manhattan;
 }

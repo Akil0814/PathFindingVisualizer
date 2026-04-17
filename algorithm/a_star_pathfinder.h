@@ -34,7 +34,6 @@ private:
 
 private:
     void initialize();
-    void close_current_tile();
 
 private:
     std::priority_queue<QueueNode, std::vector<QueueNode>, QueueNodeCompare> _open_set;

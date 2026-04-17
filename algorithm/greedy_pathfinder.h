@@ -27,7 +27,6 @@ private:
 
 private:
     void initialize();
-    void close_current_tile();
     [[nodiscard]] HeuristicMode default_heuristic_mode() const;
 
 private:

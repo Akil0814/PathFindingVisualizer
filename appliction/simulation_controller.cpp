@@ -2,6 +2,7 @@
 
 #include "../algorithm/a_star_pathfinder.h"
 #include "../algorithm/bfs_pathfinder.h"
+#include "../algorithm/custom_pathfinder.h"
 #include "../algorithm/dijkstra_pathfinder.h"
 #include "../algorithm/greedy_pathfinder.h"
 
@@ -289,6 +290,9 @@ void SimulationController::create_path_finder()
     }
     case Algorithm::Greedy:
         _path_finder = std::make_unique<GreedyPathfinder>();
+        break;
+    case Algorithm::Custom:
+        _path_finder = std::make_unique<CustomPathfinder>();
         break;
     }
 

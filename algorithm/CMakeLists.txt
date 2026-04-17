@@ -7,6 +7,7 @@ set(ALG
 set(PATHFINDER_ALGORITHMS
     a_star
     bfs
+    custom
     dijkstra
     greedy
 )

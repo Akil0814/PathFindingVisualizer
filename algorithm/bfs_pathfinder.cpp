@@ -3,11 +3,3 @@
 void BFSPathfinder::next_step()
 {
 }
-
-void BFSPathfinder::initialize()
-{
-}
-
-void BFSPathfinder::close_current_tile()
-{
-}

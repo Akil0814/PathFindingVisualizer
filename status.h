@@ -14,7 +14,8 @@ enum class Algorithm
 	AStart,
 	Dijkstar,
 	BFS,
-	Greedy
+	Greedy,
+	Custom
 };
 
 enum class PlayMode

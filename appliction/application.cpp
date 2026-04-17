@@ -438,7 +438,7 @@ void Application::rend_imgui()
 		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
 		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
 		int algorithm_index = _controller != nullptr ? static_cast<int>(_controller->algorithm()) : 0;
-		if (ImGui::Combo("Algorithm", &algorithm_index, "A Star\0Dijkstra\0BFS\0Greedy\0\0"))
+		if (ImGui::Combo("Algorithm", &algorithm_index, "A Star\0Dijkstra\0BFS\0Greedy\0Custom\0\0"))
 		{
 			if (validate_unlocked_operation("Reset or Restart before changing algorithm.") && _controller != nullptr)
 				_controller->set_algorithm(static_cast<Algorithm>(algorithm_index));

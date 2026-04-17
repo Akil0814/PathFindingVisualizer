@@ -12,7 +12,6 @@ public:
 
 private:
     void initialize();
-    void close_current_tile();
 
 private:
     std::queue<Point> _frontier;

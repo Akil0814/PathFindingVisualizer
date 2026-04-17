@@ -4,6 +4,7 @@
 
 void DijkstraPathfinder::next_step()
 {
+    // Dijkstra expands the tile with the lowest known cost from the start.
     if (is_finished())
         return;
 
@@ -14,17 +15,20 @@ void DijkstraPathfinder::next_step()
     if (current_board == nullptr || is_finished())
         return;
 
-    close_current_tile();
+    // Finish the previously highlighted tile before selecting the next cheapest candidate.
+    close_current_tile(_current);
 
     while (!_open_set.empty())
     {
         const QueueNode node = _open_set.top();
         _open_set.pop();
 
+        // Skip stale queue entries left behind after a better path was found.
         if (node.g_cost != _best_cost[node.point.y][node.point.x])
             continue;
 
         const Point current = node.point;
+        // With non-negative tile weights, popping the goal means its shortest cost is final.
         if (same_point(current, _goal))
         {
             mark_finished(rebuild_path(_start, _goal));
@@ -35,6 +39,7 @@ void DijkstraPathfinder::next_step()
         mark_tile_current(current);
         _current = current;
 
+        // Relax neighbors using only accumulated g cost; Dijkstra has no heuristic.
         for (const Point next : neighbors(current))
         {
             const int next_g_cost = current_tile._g_cost + tile_weight(next);
@@ -58,6 +63,7 @@ void DijkstraPathfinder::next_step()
 
 void DijkstraPathfinder::initialize()
 {
+    // best_cost starts at infinity and decreases as cheaper routes are discovered.
     _initialized = true;
     _current = { -1, -1 };
 
@@ -75,17 +81,8 @@ void DijkstraPathfinder::initialize()
     while (!_open_set.empty())
         _open_set.pop();
 
+    // Start has zero accumulated cost and is the first queue entry.
     clear_tile_path_data(_start);
     _best_cost[_start.y][_start.x] = 0;
     _open_set.push({ _start, 0 });
-}
-
-void DijkstraPathfinder::close_current_tile()
-{
-    Board* current_board = board();
-    if (current_board == nullptr || !current_board->in_bounds(_current))
-        return;
-
-    mark_tile_closed(_current);
-    _current = { -1, -1 };
 }

@@ -5,6 +5,7 @@
 
 bool Pathfinder::read_endpoints(Point& start, Point& goal) const
 {
+    // Every pathfinder begins by reading and validating the board endpoints.
     Board* current_board = board();
     if (current_board == nullptr)
         return false;
@@ -17,6 +18,7 @@ bool Pathfinder::read_endpoints(Point& start, Point& goal) const
 
 std::vector<Point> Pathfinder::neighbors(Point point) const
 {
+    // Delegate movement rules to Board so all algorithms share diagonal policy and wall filtering.
     Board* current_board = board();
     if (current_board == nullptr)
         return {};
@@ -50,6 +52,7 @@ int Pathfinder::tile_weight(Point point) const
 
 int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
 {
+    // Heuristic values are intentionally integral because tile costs are displayed as ints.
     const int dx = std::abs(from.x - to.x);
     const int dy = std::abs(from.y - to.y);
 
@@ -77,6 +80,7 @@ int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
 
 void Pathfinder::clear_tile_path_data(Point point)
 {
+    // Reset per-search metadata before using a tile as a new search root.
     Board* current_board = board();
     if (current_board == nullptr || !current_board->in_bounds(point))
         return;
@@ -99,6 +103,7 @@ void Pathfinder::set_tile_parent(Point child, Point parent)
 
 void Pathfinder::set_tile_costs(Point point, int g_cost, int h_cost)
 {
+    // Store costs on the tile so the visual debug panel can show algorithm progress.
     Board* current_board = board();
     if (current_board == nullptr || !current_board->in_bounds(point))
         return;
@@ -111,6 +116,7 @@ void Pathfinder::set_tile_costs(Point point, int g_cost, int h_cost)
 
 void Pathfinder::mark_tile_current(Point point)
 {
+    // Start and goal keep their special icons, so visualization markers skip them.
     Board* current_board = board();
     if (current_board == nullptr || !current_board->in_bounds(point) || is_start_or_goal(point))
         return;
@@ -145,8 +151,20 @@ void Pathfinder::mark_tile_path(Point point)
     current_board->tile_at(point).change_status(Tile::Status::Path);
 }
 
+void Pathfinder::close_current_tile(Point& current)
+{
+    // A visual step has finished expanding this tile; mark it closed and clear the tracker.
+    Board* current_board = board();
+    if (current_board == nullptr || !current_board->in_bounds(current))
+        return;
+
+    mark_tile_closed(current);
+    current = { -1, -1 };
+}
+
 bool Pathfinder::rebuild_path(Point start, Point goal)
 {
+    // Follow parent links backward from goal to start and mark only intermediate tiles as path.
     Board* current_board = board();
     if (current_board == nullptr)
         return false;

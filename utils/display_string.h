@@ -43,6 +43,7 @@ namespace DisplayString
 		case Algorithm::Dijkstar: return "Dijkstra";
 		case Algorithm::BFS: return "BFS";
 		case Algorithm::Greedy: return "Greedy";
+		case Algorithm::Custom: return "Custom";
 
 		default: return "Unknown";
 		}

@@ -2,6 +2,7 @@
 
 void BFSPathfinder::next_step()
 {
+    // BFS explores in first-in-first-out order, so it expands the grid by layers.
     if (is_finished())
         return;
 
@@ -12,7 +13,8 @@ void BFSPathfinder::next_step()
     if (current_board == nullptr || is_finished())
         return;
 
-    close_current_tile();
+    // Finish the previous visual step before choosing the next frontier tile.
+    close_current_tile(_current);
 
     if (_frontier.empty())
     {
@@ -23,6 +25,7 @@ void BFSPathfinder::next_step()
     const Point current = _frontier.front();
     _frontier.pop();
 
+    // The first time the goal is popped, BFS has found the shortest path in step count.
     if (same_point(current, _goal))
     {
         mark_finished(rebuild_path(_start, _goal));
@@ -34,6 +37,7 @@ void BFSPathfinder::next_step()
 
     _current = current;
 
+    // Discover each unvisited neighbor once and remember how we reached it.
     for (const Point next : neighbors(current))
     {
         if (_visited[next.y][next.x])
@@ -51,6 +55,7 @@ void BFSPathfinder::next_step()
 
 void BFSPathfinder::initialize()
 {
+    // The queue stores discovered tiles waiting to be expanded.
     _initialized = true;
 
     Board* current_board = board();
@@ -79,15 +84,4 @@ void BFSPathfinder::initialize()
 
     _visited[_start.y][_start.x] = true;
     _frontier.push(_start);
-}
-
-void BFSPathfinder::close_current_tile()
-{
-    Board* current_board = board();
-    if (current_board == nullptr || !current_board->in_bounds(_current))
-        return;
-
-    mark_tile_closed(_current);
-
-    _current = { -1, -1 };
 }

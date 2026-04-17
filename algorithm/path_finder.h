@@ -81,6 +81,7 @@ protected:
     void mark_tile_open(Point point);
     void mark_tile_closed(Point point);
     void mark_tile_path(Point point);
+    void close_current_tile(Point& current);
     [[nodiscard]] bool rebuild_path(Point start, Point goal);
 
 	Board* _board = nullptr;

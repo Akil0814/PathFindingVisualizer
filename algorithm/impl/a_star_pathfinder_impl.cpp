@@ -4,6 +4,7 @@
 
 void AStarPathfinder::next_step()
 {
+    // A* expands the tile with the smallest f = g + h score.
     if (is_finished())
         return;
 
@@ -14,17 +15,20 @@ void AStarPathfinder::next_step()
     if (current_board == nullptr || is_finished())
         return;
 
-    close_current_tile();
+    // Finish the previously highlighted tile before selecting the next best candidate.
+    close_current_tile(_current);
 
     while (!_open_set.empty())
     {
         const QueueNode node = _open_set.top();
         _open_set.pop();
 
+        // Priority queues may contain older entries; ignore any that no longer match best_cost.
         if (node.g_cost != _best_cost[node.point.y][node.point.x])
             continue;
 
         const Point current = node.point;
+        // The goal is optimal when it is popped from the open set with its best known g cost.
         if (same_point(current, _goal))
         {
             mark_finished(rebuild_path(_start, _goal));
@@ -35,6 +39,7 @@ void AStarPathfinder::next_step()
         mark_tile_current(current);
         _current = current;
 
+        // Relax all neighbors: a lower g cost means this route is better.
         for (const Point next : neighbors(current))
         {
             const int next_g_cost = current_tile._g_cost + tile_weight(next);
@@ -59,6 +64,7 @@ void AStarPathfinder::next_step()
 
 void AStarPathfinder::initialize()
 {
+    // best_cost stores the best g cost discovered for each tile.
     _initialized = true;
     _current = { -1, -1 };
 
@@ -76,19 +82,10 @@ void AStarPathfinder::initialize()
     while (!_open_set.empty())
         _open_set.pop();
 
+    // Start enters the open set with g = 0 and h based on the selected heuristic.
     const int start_h_cost = heuristic_cost(_start, _goal, _heuristic_mode);
     clear_tile_path_data(_start);
     set_tile_costs(_start, 0, start_h_cost);
     _best_cost[_start.y][_start.x] = 0;
     _open_set.push({ _start, start_h_cost, start_h_cost, 0 });
-}
-
-void AStarPathfinder::close_current_tile()
-{
-    Board* current_board = board();
-    if (current_board == nullptr || !current_board->in_bounds(_current))
-        return;
-
-    mark_tile_closed(_current);
-    _current = { -1, -1 };
 }
