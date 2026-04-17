@@ -3,6 +3,8 @@
 #include <SDL_image.h>//图像库
 
 SDL_Texture* Board::tile_select = nullptr;
+SDL_Texture* Board::tile_start = nullptr;
+SDL_Texture* Board::tile_end = nullptr;
 
 Board::Board()
 {
@@ -65,6 +67,8 @@ void Board::init(SDL_Renderer* renderer)
 
 
     tile_select = load_texture("assets/texture/tile_select.png");
+    tile_start = load_texture("assets/texture/tile_start_pos.png");
+    tile_end = load_texture("assets/texture/tile_end_pos.png");
 
 }
 
@@ -72,6 +76,9 @@ void Board::on_render(SDL_Renderer* renderer)
 {
     draw_board(renderer);
     draw_mouse_pos_tile(renderer, _mouse_pos);
+
+    SDL_Rect detail = { 20,20,150,150 };
+    SDL_RenderFillRect(renderer, &detail);
 
     for (int y = 0; y < _row; ++y)
     {
@@ -97,12 +104,12 @@ void Board::on_render(SDL_Renderer* renderer)
                 break;
 
             case Tile::Status::Start:
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);     // red
-                break;
+                SDL_RenderCopy(renderer, tile_start, nullptr, &rect);    // red
+                continue;
 
             case Tile::Status::Goal:
-                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);     // green
-                break;
+                SDL_RenderCopy(renderer, tile_end, nullptr, &rect);   // green
+                continue;
 
             case Tile::Status::Open:
                 SDL_SetRenderDrawColor(renderer, 0, 200, 255, 255);   // cyan

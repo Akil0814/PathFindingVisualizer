@@ -30,6 +30,8 @@ public:
     int _h_cost = 0;
     int _f_cost = 0;
 
+    int _weight = 1;
+
 private:
 
     Status _status = Status::Empty;

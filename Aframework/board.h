@@ -37,6 +37,8 @@ private:
 
 private:
 	static SDL_Texture* tile_select;
+	static SDL_Texture* tile_start;
+	static SDL_Texture* tile_end;
 
 private:
 	bool _move_in_board = false;

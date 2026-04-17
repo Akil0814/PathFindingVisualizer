@@ -24,6 +24,8 @@ public:
 private:
 
 	void init();
+	void init_button();
+	void init_text();
 
 	void on_render();
 	void on_update(double delta);
@@ -45,7 +47,11 @@ private:
 
 private:
 	Board* _board;
+
 	ButtonManager* _button_manager;
+	ButtonManager* _edit_button_manager;
+	ButtonManager* _dev_button_manager;
+
 	std::vector<TextLabel> _text_labels;
 
 private:
@@ -53,6 +59,7 @@ private:
 
 	InPutType _current_input = InPutType::Empty;
 	Algorithm _current_algorithm = Algorithm::AStart;
+	PlayMode _current_play_mod = PlayMode::Idle;
 
 	bool _active = { true };
 	bool _is_dev_mod = { false };

@@ -15,3 +15,17 @@ enum class Algorithm
 	Dijkstar,
 	BFS
 };
+
+enum class PlayMode
+{
+	Idle,
+	AutoRun,
+	Pause
+};
+
+enum class SimState
+{
+	Editing,
+	Running,
+	Finished
+};
