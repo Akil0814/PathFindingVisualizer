@@ -13,7 +13,8 @@ enum class Algorithm
 {
 	AStart,
 	Dijkstar,
-	BFS
+	BFS,
+	Greedy
 };
 
 enum class PlayMode

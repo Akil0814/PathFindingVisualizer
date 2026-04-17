@@ -56,6 +56,7 @@ namespace
 		case Algorithm::AStart: return "A*";
 		case Algorithm::Dijkstar: return "Dijkstra";
 		case Algorithm::BFS: return "BFS";
+		case Algorithm::Greedy: return "Greedy";
 
 		default: return "Unknown";
 		}
@@ -152,7 +153,6 @@ namespace
 		s_imgui_initialized = false;
 	}
 }
-
 
 Application::Application()
 {
@@ -284,11 +284,11 @@ void Application::init()
 	_dev_button_manager = new ButtonManager();
 	_edit_button_manager = new ButtonManager();
 
-	_board->init(_renderer);
 	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
 	init_assert(_button_font != nullptr, TTF_GetError());
 	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
 	init_assert(_title_font != nullptr, TTF_GetError());
+	_board->init(_renderer, _title_font);
 
 	init_button();
 }
@@ -308,57 +308,35 @@ void Application::rend_imgui()
 	ImGui_ImplSDLRenderer2_NewFrame();
 	ImGui::NewFrame();
 
-	ImGuiIO& io = ImGui::GetIO();
-	int window_width = 0;
-	int window_height = 0;
-	int renderer_width = 0;
-	int renderer_height = 0;
 	int mouse_x = 0;
 	int mouse_y = 0;
-	SDL_RendererInfo renderer_info = {};
 
-	SDL_GetWindowSize(_window, &window_width, &window_height);
-	SDL_GetRendererOutputSize(_renderer, &renderer_width, &renderer_height);
 	SDL_GetMouseState(&mouse_x, &mouse_y);
-	SDL_GetRendererInfo(_renderer, &renderer_info);
 
 	ImGui::SetNextWindowPos(ImVec2(15.0f, 15.0f), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(360.0f, 430.0f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(300.0f, 260.0f), ImGuiCond_FirstUseEver);
 
 	bool dev_mode_open = _is_dev_mod;
 	if (ImGui::Begin("Dev Debug", &dev_mode_open))
 	{
-		ImGui::Text("Frame");
-		ImGui::Separator();
-		ImGui::Text("FPS: %.1f", io.Framerate);
-		ImGui::Text("Delta: %.3f ms", io.DeltaTime * 1000.0f);
-		float target_fps = static_cast<float>(FPS);
-		if (ImGui::SliderFloat("Target FPS", &target_fps, 15.0f, 240.0f, "%.0f"))
-			FPS = target_fps;
-
-		ImGui::Spacing();
 		ImGui::Text("Application");
 		ImGui::Separator();
-		ImGui::Text("Active: %s", _active ? "true" : "false");
 		ImGui::Text("Input mode: %s", input_type_to_string(_current_input));
 		ImGui::Text("Algorithm: %s", algorithm_to_string(_current_algorithm));
-		ImGui::Text("Buttons: %zu", _button_manager != nullptr ? _button_manager->size() : 0);
 
 		ImGui::Spacing();
-		ImGui::Text("Window / Renderer");
+		ImGui::Text("Weight Brush");
 		ImGui::Separator();
-		ImGui::Text("Window size: %d x %d", window_width, window_height);
-		ImGui::Text("Renderer size: %d x %d", renderer_width, renderer_height);
-		ImGui::Text("Renderer: %s", renderer_info.name != nullptr ? renderer_info.name : "unknown");
-		ImGui::Text("SDL ticks: %llu", static_cast<unsigned long long>(SDL_GetTicks64()));
+		if (ImGui::SliderInt("Input weight", &_input_weight, 1, 10) && _board != nullptr)
+			_board->set_weight(_input_weight);
+		if (ImGui::Button("Use Weight Brush"))
+			_current_input = InPutType::Weight;
 
 		ImGui::Spacing();
 		ImGui::Text("Mouse");
 		ImGui::Separator();
 		ImGui::Text("Position: %d, %d", mouse_x, mouse_y);
 		ImGui::Text("Inside board: %s", (_board != nullptr && _board->is_inside(mouse_x, mouse_y)) ? "true" : "false");
-		ImGui::Text("ImGui wants mouse: %s", io.WantCaptureMouse ? "true" : "false");
-		ImGui::Text("ImGui wants keyboard: %s", io.WantCaptureKeyboard ? "true" : "false");
 
 		ImGui::Spacing();
 		ImGui::Text("Tools");
@@ -405,13 +383,17 @@ void Application::render_status_titles()
 			SDL_RenderCopy(_renderer, title_texture, nullptr, &rect);
 		};
 
-	render_title(std::string("EDIT: ") + edit_mode_to_string(_current_input), { 900, 40 });
-	render_title(std::string("Algorithm: ") + algorithm_to_string(_current_algorithm), { 20, 232 });
-	render_title("CONTROL", { 900, 200 });
-	render_title("RESET", { 900, 480 });
+	render_title(std::string("Edit mode: ") + edit_mode_to_string(_current_input), { 900, 40 });
+	render_title(std::string("Alg using: ") + algorithm_to_string(_current_algorithm), { 20, 202 });
+
+	render_title("Control", { 900, 200 });
+	render_title("Reset", { 900, 480 });
+
+	render_title("Total Steps:", { 20, 150 });//一共走了多少格子
+	render_title("Total Cost:", { 20, 170 });//这条路径的总花费
 
 	if(_is_dev_mod)
-		render_title("Advance", { 20,454 });
+		render_title("Advance", { 20,504 });
 }
 
 void Application::init_button()
@@ -460,27 +442,33 @@ void Application::init_button()
 		_current_input = InPutType::Empty;
 		});
 
-	rect_button = { 20,250,150,50 };
+	rect_button = { 20,220,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::AStart;
 		});
 
-	rect_button = { 20,310,150,50 };
+	rect_button = { 20,280,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::Dijkstar;
 		});
 
-	rect_button = { 20,370,150,50 };
+	rect_button = { 20,340,150,50 };
 	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
 		_current_algorithm = Algorithm::BFS;
 		});
 
+	rect_button = { 20,400,150,50 };
+	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Greedy", true));
+	tmp->set_on_click([this] {
+		_current_algorithm = Algorithm::Greedy;
+		});
 	//run time
 	rect_button = { 900,220,150,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
@@ -530,21 +518,29 @@ void Application::init_button()
 		});
 
 
-	rect_button = { 20,660,150,50 };
+	rect_button = {1000,650,50,50 };
 	tmp = _button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Dev Mode", true));
+	set_button_label(tmp, rect_button, make_text("Dev", true));
 	tmp->set_on_click([this] {
 		_is_dev_mod = !_is_dev_mod;
 		});
 
-	rect_button = { 20,470,150,50 };
+	rect_button = { 20,530,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
-	set_button_label(tmp, rect_button, make_text("Eide Weight", true));
+	set_button_label(tmp, rect_button, make_text("Show Cost", true));
+	tmp->set_on_click([this] {
+		_board->toggle_show_cost();
+		});
+
+
+	rect_button = { 20,590,150,50 };
+	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
+	set_button_label(tmp, rect_button, make_text("Edit Weight", true));
 	tmp->set_on_click([this] {
 		_current_input = InPutType::Weight;
 		});
 
-	rect_button = { 20,530,150,50 };
+	rect_button = { 20,650,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Weight Graph", true));
 	tmp->set_on_click([this] {

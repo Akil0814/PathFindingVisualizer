@@ -1,15 +1,33 @@
 #pragma once
+#include <SDL.h>
+#include"../Aframework/board.h"
 #include "../status.h"
 
 class Pathfinder
 {
 public:
-	Pathfinder();
-	~Pathfinder();
+    virtual ~Pathfinder() = default;
 
-	void set_algorithm(Algorithm type);
-	Algorithm get_current_algorithm();
+    void bind_board(Board* board)
+    {
+        _board = board;
+    }
+
+    virtual void next_step() = 0;
+
+    bool is_finished() const
+    {
+        return _finished;
+    }
+
+    bool found_path() const
+    {
+        return _found_path;
+    }
 
 private:
-	Algorithm _current_algorithm = Algorithm::AStart;
+	Board* _board = nullptr;
+
+	bool _finished = false;
+	bool _found_path = false;
 };

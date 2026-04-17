@@ -1,4 +1,6 @@
 #include "board.h"
+#include "txt_texture_manager.h"
+
 #include <cmath>
 #include <SDL_image.h>//图像库
 #include <algorithm>
@@ -6,6 +8,38 @@
 SDL_Texture* Board::tile_select = nullptr;
 SDL_Texture* Board::tile_start = nullptr;
 SDL_Texture* Board::tile_end = nullptr;
+
+namespace
+{
+    SDL_Rect make_label_rect(SDL_Point pos, SDL_Texture* texture)
+    {
+        if (texture == nullptr)
+            return { pos.x, pos.y, 0, 0 };
+
+        int texture_width = 0;
+        int texture_height = 0;
+        if (SDL_QueryTexture(texture, nullptr, nullptr, &texture_width, &texture_height) != 0)
+            return { pos.x, pos.y, 0, 0 };
+
+        return { pos.x, pos.y, texture_width, texture_height };
+    }
+
+    const char* tile_status_to_string(Tile::Status status)
+    {
+        switch (status)
+        {
+        case Tile::Status::Empty: return "Empty";
+        case Tile::Status::Wall: return "Wall";
+        case Tile::Status::Start: return "Start";
+        case Tile::Status::Goal: return "Goal";
+        case Tile::Status::Open: return "Open";
+        case Tile::Status::Closed: return "Closed";
+        case Tile::Status::Path: return "Path";
+
+        default: return "Unknown";
+        }
+    }
+}
 
 Board::Board()
 {
@@ -24,6 +58,8 @@ void Board::reset()
 {
     _board.assign(_row, std::vector<Tile>(_col));
 
+    _board_snapshot.clear();
+
     _move_in_board = false;
     _click_in_board = false;
     _on_process = false;
@@ -33,17 +69,21 @@ void Board::reset()
 
     _start_pos_index = { -1, -1 };
     _end_pos_index = { -1, -1 };
+    _info_tile_index = { -1, -1 };
 
     _mouse_click_tile_center = { 0, 0 };
 }
 
 void Board::clear_path_data()
 {
+    _board_snapshot.clear();
 
 }
 
-void Board::init(SDL_Renderer* renderer)
+void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
 {
+    _info_font = info_font;
+    _number_renderer = std::make_unique<NumberRenderer>(renderer, info_font);
 
     auto load_texture = [&](const char* path) -> SDL_Texture*
         {
@@ -77,10 +117,6 @@ void Board::on_render(SDL_Renderer* renderer)
     draw_board(renderer);
     draw_mouse_pos_tile(renderer, _mouse_pos);
 
-    SDL_Rect detail = { 20,20,150,150 };
-    SDL_RenderFillRect(renderer, &detail);
-
-
     for (int y = 0; y < _row; ++y)
     {
         for (int x = 0; x < _col; ++x)
@@ -104,16 +140,16 @@ void Board::on_render(SDL_Renderer* renderer)
 
                 SDL_Color color = { 0, 0, 0, 255 };
 
-                if (w <= 1)       color = { 60, 110, 70, 255 };
-                else if (w == 2)  color = { 75, 118, 76, 255 };
-                else if (w == 3)  color = { 90, 112, 80, 255 };
-                else if (w == 4)  color = { 104, 106, 82, 255 };
-                else if (w == 5)  color = { 118, 100, 84, 255 };
-                else if (w == 6)  color = { 126, 92, 82, 255 };
-                else if (w == 7)  color = { 132, 84, 78, 255 };
-                else if (w == 8)  color = { 136, 74, 72, 255 };
-                else if (w == 9)  color = { 139, 64, 64, 255 };
-                else              color = { 142, 56, 56, 255 };
+                if (w <= 1)       color = { 116, 174, 98, 255 };
+                else if (w == 2)  color = { 139, 184, 91, 255 };
+                else if (w == 3)  color = { 164, 190, 82, 255 };
+                else if (w == 4)  color = { 191, 190, 73, 255 };
+                else if (w == 5)  color = { 211, 178, 65, 255 };
+                else if (w == 6)  color = { 224, 157, 58, 255 };
+                else if (w == 7)  color = { 220, 128, 56, 255 };
+                else if (w == 8)  color = { 211, 98, 58, 255 };
+                else if (w == 9)  color = { 196, 70, 64, 255 };
+                else              color = { 176, 50, 58, 255 };
 
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
                 SDL_RenderFillRect(renderer, &rect);
@@ -153,6 +189,8 @@ void Board::on_render(SDL_Renderer* renderer)
             SDL_RenderFillRect(renderer, &rect);
         }
     }
+
+    draw_tile_info_panel(renderer);
 }
 
 void Board::on_update(double delta, InPutType input)
@@ -183,6 +221,24 @@ bool Board::is_inside(int x, int y) const
         && y >= _board_render_pos.y
         && y < _board_render_pos.y + _row * SIZE_TILE;
 
+}
+
+SDL_Point Board::get_tile_index_at(int x, int y) const
+{
+    if (!is_inside(x, y))
+        return { -1, -1 };
+
+    return
+    {
+        (x - _board_render_pos.x) / SIZE_TILE,
+        (y - _board_render_pos.y) / SIZE_TILE
+    };
+}
+
+bool Board::is_valid_tile_index(SDL_Point index) const
+{
+    return index.x >= 0 && index.x < _col
+        && index.y >= 0 && index.y < _row;
 }
 
 void Board::draw_board(SDL_Renderer* renderer)
@@ -222,6 +278,61 @@ void Board::draw_board(SDL_Renderer* renderer)
     }
 }
 
+void Board::draw_tile_info_panel(SDL_Renderer* renderer)
+{
+    const SDL_Rect panel_rect = { 12, 6, 186, 132 };
+    SDL_SetRenderDrawColor(renderer, 205, 205, 205, 255);
+    SDL_RenderFillRect(renderer, &panel_rect);
+
+    render_info_label(renderer, "Cur Tile:", { 20, 10 });
+    render_info_label(renderer, "G:", { 20, 30 });
+    render_info_label(renderer, "H:", { 20, 50 });
+    render_info_label(renderer, "F:", { 20, 70 });
+    render_info_label(renderer, "weight:", { 20, 90 });
+    render_info_label(renderer, "Status:", { 20, 110 });
+
+    if (!is_valid_tile_index(_info_tile_index))
+    {
+        render_info_label(renderer, "None", { 85, 110 });
+        return;
+    }
+
+    const Tile& tile = _board[_info_tile_index.y][_info_tile_index.x];
+
+    render_info_label(renderer, "X:", { 120, 10 });
+    render_info_number(_info_tile_index.x, { 139, 8, 22, 18 });
+    render_info_label(renderer, "Y:", { 156, 10 });
+    render_info_number(_info_tile_index.y, { 174, 8, 20, 18 });
+
+    render_info_number(tile._g_cost, { 56, 28, 64, 18 });
+    render_info_number(tile._h_cost, { 56, 48, 64, 18 });
+    render_info_number(tile._f_cost, { 56, 68, 64, 18 });
+    render_info_number(tile._weight, { 94, 88, 36, 18 });
+    render_info_label(renderer, tile_status_to_string(tile.get_status()), { 85, 110 });
+}
+
+void Board::render_info_label(SDL_Renderer* renderer, const char* text, SDL_Point pos)
+{
+    if (renderer == nullptr || _info_font == nullptr || text == nullptr)
+        return;
+
+    const SDL_Color text_color = { 15, 15, 15, 255 };
+    SDL_Texture* texture = TxtTextureManager::instance().get_txt_texture(renderer, _info_font, text, true, text_color);
+    if (texture == nullptr)
+        return;
+
+    const SDL_Rect rect = make_label_rect(pos, texture);
+    SDL_RenderCopy(renderer, texture, nullptr, &rect);
+}
+
+void Board::render_info_number(int value, const SDL_Rect& rect) const
+{
+    if (_number_renderer == nullptr)
+        return;
+
+    _number_renderer->render_number(value, rect);
+}
+
 void Board::on_mouse_click(const SDL_Event& event)
 {
     if (_on_process)
@@ -258,14 +369,17 @@ void Board::on_mouse_click(const SDL_Event& event)
     if (!should_paint || !is_inside(mouse_x, mouse_y))
         return;
 
-    int x = (mouse_x - _board_render_pos.x) / SIZE_TILE;
-    int y = (mouse_y - _board_render_pos.y) / SIZE_TILE;
+    const SDL_Point tile_index = get_tile_index_at(mouse_x, mouse_y);
 
-    if (x < 0 || x >= _col || y < 0 || y >= _row)
+    if (!is_valid_tile_index(tile_index))
         return;
+
+    const int x = tile_index.x;
+    const int y = tile_index.y;
 
     _index_x = x;
     _index_y = y;
+    _info_tile_index = tile_index;
 
     _mouse_click_tile_center =
     {
@@ -325,11 +439,13 @@ void Board::on_mouse_click(const SDL_Event& event)
         tile.change_status(Tile::Status::Goal);
         break;
 
+    case InPutType::Weight:
+        tile._weight = _input_weight;
+        break;
+
     default:
         break;
     }
-
-    tile._weight = _input_weight;
 }
 
 void Board::on_mouse_move(const SDL_Event& event)
@@ -342,6 +458,7 @@ void Board::on_mouse_move(const SDL_Event& event)
         _move_in_board = true;
         _mouse_pos.x = event.motion.x;
         _mouse_pos.y = event.motion.y;
+        _info_tile_index = get_tile_index_at(event.motion.x, event.motion.y);
     }
     else
         _move_in_board = false;
@@ -396,6 +513,11 @@ void Board::save_snapshot()
 void Board::toggle_show_weight()
 {
     _show_weight = !_show_weight;
+}
+
+void Board::toggle_show_cost()
+{
+    _show_cost = !_show_cost;
 }
 
 void Board::set_weight(int weight)
