@@ -17,7 +17,13 @@ file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})
 
 include_directories("thirdparty/include")
 
-link_directories("thirdparty/lib/x64")
+if (MSVC)
+    link_directories("${CMAKE_SOURCE_DIR}/thirdparty/lib/msvc")
+    set(SDL_LINK_LIBS SDL2 SDL2main SDL2_ttf SDL2_image SDL2_mixer)
+elseif (MINGW)
+    link_directories("${CMAKE_SOURCE_DIR}/thirdparty/lib/mingw")
+    set(SDL_LINK_LIBS SDL2 SDL2_ttf SDL2_image SDL2_mixer)
+endif()
 
 add_subdirectory(imgui)
 add_subdirectory(appliction)
@@ -28,6 +34,6 @@ add_subdirectory(Aframework)
 add_executable(PathFindingVisualizer "main.cpp"  "status.h")
 
 target_link_libraries(PathFindingVisualizer 
-    applicationLib algorithmLib AframeworkLib 
-    SDL2.lib SDL2main.lib SDL2_ttf.lib SDL2_image.lib SDL2_mixer.lib imguiLib
+    applicationLib algorithmLib AframeworkLib imguiLib
+    ${SDL_LINK_LIBS}
 )
