@@ -6,7 +6,7 @@ If you want to implement A*, Dijkstra, Greedy, DFS, or another path-finding algo
 
 ### File Responsibilities
 
-- `path_finder.h`: base class for every algorithm. It defines `next_step()`, `clone()`, `mark_finished(...)`, `move_mode()`, and the shared contract.
+- `path_finder.h`: base class for every algorithm. It defines `next_step()`, automatic cloning through `CloneablePathfinder`, `mark_finished(...)`, `move_mode()`, and the shared contract.
 - `bfs_pathfinder.*`: the current complete reference implementation.
 - `a_star_pathfinder.*`: A* entry point. `next_step()` is currently a placeholder.
 - `dijkstra_pathfinder.*`: Dijkstra entry point. `next_step()` is currently a placeholder.
@@ -14,23 +14,19 @@ If you want to implement A*, Dijkstra, Greedy, DFS, or another path-finding algo
 
 ### Required Interface Contract
 
-Every algorithm class should inherit from `Pathfinder`:
+Every algorithm class should inherit from `CloneablePathfinder<YourPathfinder>`:
 
 ```cpp
-class YourPathfinder final : public Pathfinder
+class YourPathfinder final : public CloneablePathfinder<YourPathfinder>
 {
 public:
     void next_step() override;
-    [[nodiscard]] std::unique_ptr<Pathfinder> clone() const override
-    {
-        return std::make_unique<YourPathfinder>(*this);
-    }
 };
 ```
 
 `next_step()` advances one search step, not the entire search. This is what allows `SimulationController` to support `Next Step`, `Auto Run`, `Pause`, and `Prev Step`.
 
-`clone()` must copy the algorithm's internal state. `SimulationController` saves an algorithm clone and a board snapshot before every step so it can undo one step.
+`CloneablePathfinder` copies the algorithm's internal state automatically. `SimulationController` saves an algorithm clone and a board snapshot before every step so it can undo one step.
 
 ### States You Must Keep In Sync
 
@@ -89,7 +85,7 @@ Common mappings:
 - A*: priority queue ordered by the smallest `f_cost = g_cost + h_cost`.
 - Greedy: priority queue ordered by the smallest `h_cost`.
 
-These containers must be member variables so `clone()` can copy the current search progress.
+These containers must be member variables so automatic cloning can copy the current search progress.
 
 #### 4. Tile::Status visualization state
 
@@ -185,7 +181,7 @@ This keeps the Dev Mode Four Way / Eight Way setting working for every algorithm
 `Prev Step` depends on two snapshots:
 
 - `Board::save_snapshot()` stores board cell state.
-- `Pathfinder::clone()` stores internal algorithm state.
+- `CloneablePathfinder` stores internal algorithm state through automatic `clone()`.
 
 Therefore, every piece of data that affects search progress must be a copyable member variable of the algorithm class, for example:
 
@@ -222,7 +218,7 @@ Those responsibilities belong to `Application`, `SimulationController`, and `Boa
 6. Iterate through `Board::neighbors(current, move_mode())`.
 7. According to the algorithm rules, update each neighbor's `parent`, `g/h/f`, and status.
 8. When the goal is found, rebuild the path through `parent`, mark `Path`, and call `mark_finished(true)`.
-9. Confirm that `clone()` copies all search state, then test `Prev Step`.
+9. Confirm that automatic cloning preserves all search state, then test `Prev Step`.
 
 ### Common Pitfalls
 

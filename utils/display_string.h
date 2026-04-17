@@ -59,6 +59,18 @@ namespace DisplayString
 		}
 	}
 
+	inline const char* diagonal_move_policy(DiagonalMovePolicy policy)
+	{
+		switch (policy)
+		{
+		case DiagonalMovePolicy::BlockIfEitherSideBlocked: return "Strict No Corner Cutting";
+		case DiagonalMovePolicy::BlockIfBothSidesBlocked: return "No Corner Cutting";
+		case DiagonalMovePolicy::IgnoreSideBlocks: return "Allow Corner Cutting";
+
+		default: return "Unknown";
+		}
+	}
+
 	inline const char* play_mode(PlayMode play_mode)
 	{
 		switch (play_mode)

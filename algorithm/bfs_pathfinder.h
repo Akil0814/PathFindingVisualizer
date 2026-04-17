@@ -5,20 +5,14 @@
 #include <queue>
 #include <vector>
 
-class BFSPathfinder final : public Pathfinder
+class BFSPathfinder final : public CloneablePathfinder<BFSPathfinder>
 {
 public:
     void next_step() override;
-    [[nodiscard]] std::unique_ptr<Pathfinder> clone() const override
-    {
-        return std::make_unique<BFSPathfinder>(*this);
-    }
 
 private:
     void initialize();
     void close_current_tile();
-    void rebuild_path();
-    [[nodiscard]] bool same_point(Point lhs, Point rhs) const;
 
 private:
     std::queue<Point> _frontier;

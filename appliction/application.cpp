@@ -436,6 +436,7 @@ void Application::rend_imgui()
 		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
 		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
 		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
+		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
 		int algorithm_index = _controller != nullptr ? static_cast<int>(_controller->algorithm()) : 0;
 		if (ImGui::Combo("Algorithm", &algorithm_index, "A Star\0Dijkstra\0BFS\0Greedy\0\0"))
 		{
@@ -488,6 +489,16 @@ void Application::rend_imgui()
 					_controller->set_move_mode(move_mode_index == 1 ? MoveMode::EightWay : MoveMode::FourWay);
 			}
 		}
+		int diagonal_policy_index = _controller != nullptr ? static_cast<int>(_controller->diagonal_policy()) : 0;
+		if (ImGui::Combo("Diagonal policy", &diagonal_policy_index, "Strict No Corner Cutting\0No Corner Cutting\0Allow Corner Cutting\0\0"))
+		{
+			if (validate_unlocked_operation("Reset or Restart before changing diagonal policy."))
+			{
+				if (_controller != nullptr)
+					_controller->set_diagonal_policy(static_cast<DiagonalMovePolicy>(diagonal_policy_index));
+			}
+		}
+		ImGui::TextWrapped("Applies when Move mode is Eight Way.");
 
 		ImGui::Spacing();
 		ImGui::Text("Auto Run");
@@ -736,7 +747,17 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,540,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = _button_manager->add_button(Button(
+		_renderer,
+		rect_button,
+		{},
+		nullptr,
+		nullptr,
+		nullptr,
+		{ 180, 180, 180, 255 },
+		{ 150, 32, 32, 255 },
+		{ 130, 130, 130, 255 },
+		{ 0, 0, 0, 255 }));
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
 		std::cout << "reset " << std::endl;

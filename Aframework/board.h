@@ -49,7 +49,7 @@ public:
 	[[nodiscard]] bool in_bounds(Point index) const;
 	Tile& tile_at(Point index);
 	const Tile& tile_at(Point index) const;
-	[[nodiscard]] std::vector<Point> neighbors(Point index, MoveMode move_mode) const;
+	[[nodiscard]] std::vector<Point> neighbors(Point index, MoveMode move_mode, DiagonalMovePolicy policy) const;
 	[[nodiscard]] int path_cost() const;
 
 	bool is_inside(int x, int y) const;

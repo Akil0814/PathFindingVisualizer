@@ -44,3 +44,11 @@ enum class HeuristicMode
 	Octile,
 	Chebyshev
 };
+
+enum class DiagonalMovePolicy
+{
+	BlockIfEitherSideBlocked,
+	BlockIfBothSidesBlocked,
+	IgnoreSideBlocks
+};
+

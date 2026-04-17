@@ -91,6 +91,7 @@ bool SimulationController::previous_step()
     {
         _path_finder->bind_board(_board);
         _path_finder->set_move_mode(_move_mode);
+        _path_finder->set_diagonal_policy(_diagonal_policy);
     }
 
     _auto_run = false;
@@ -224,6 +225,17 @@ void SimulationController::set_move_mode(MoveMode move_mode)
         _path_finder->set_move_mode(_move_mode);
 }
 
+void SimulationController::set_diagonal_policy(DiagonalMovePolicy policy)
+{
+    if (_board_edit_locked)
+        return;
+
+    _diagonal_policy = policy;
+
+    if (_path_finder != nullptr)
+        _path_finder->set_diagonal_policy(_diagonal_policy);
+}
+
 void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
 {
     if (_board_edit_locked)
@@ -238,6 +250,11 @@ void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
 MoveMode SimulationController::move_mode() const
 {
     return _move_mode;
+}
+
+DiagonalMovePolicy SimulationController::diagonal_policy() const
+{
+    return _diagonal_policy;
 }
 
 HeuristicMode SimulationController::a_star_heuristic() const
@@ -279,6 +296,7 @@ void SimulationController::create_path_finder()
     {
         _path_finder->bind_board(_board);
         _path_finder->set_move_mode(_move_mode);
+        _path_finder->set_diagonal_policy(_diagonal_policy);
     }
 }
 

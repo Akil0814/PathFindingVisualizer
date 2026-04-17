@@ -16,4 +16,4 @@ Use this guide when adding or finishing a path-finding algorithm. / 添加或补
 
 `next_step()` should advance one visual step, not run the whole search at once. / `next_step()` 应该只推进一个可视化步骤，而不是一次跑完整个搜索。
 
-Keep tile status, parent links, costs, frontier/open set, visited/closed state, and `clone()` in sync. / 需要同步格子状态、父节点、代价、frontier/open set、visited/closed 状态和 `clone()`。
+Keep tile status, parent links, costs, frontier/open set, and visited/closed state in sync. Inherit from `CloneablePathfinder<YourPathfinder>` so clone support stays automatic. / 需要同步格子状态、父节点、代价、frontier/open set 和 visited/closed 状态；继承 `CloneablePathfinder<YourPathfinder>` 让 clone 自动完成。

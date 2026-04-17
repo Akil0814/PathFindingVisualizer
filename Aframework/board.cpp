@@ -347,7 +347,7 @@ const Tile& Board::tile_at(Point index) const
     return _board[index.y][index.x];
 }
 
-std::vector<Point> Board::neighbors(Point index, MoveMode move_mode) const
+std::vector<Point> Board::neighbors(Point index, MoveMode move_mode, DiagonalMovePolicy policy) const
 {
     std::vector<Point> result;
     result.reserve(move_mode == MoveMode::EightWay ? 8 : 4);
@@ -381,8 +381,27 @@ std::vector<Point> Board::neighbors(Point index, MoveMode move_mode) const
     for (const Point direction : directions_diagonal)
     {
         const Point next = { index.x + direction.x, index.y + direction.y };
-        if (is_valid_tile_index(next) && _board[next.y][next.x].get_status() != Tile::Status::Wall)
-            result.push_back(next);
+        if (!is_valid_tile_index(next) || _board[next.y][next.x].get_status() == Tile::Status::Wall)
+            continue;
+
+        const Point side_x = { index.x + direction.x, index.y };
+        const Point side_y = { index.x, index.y + direction.y };
+        const bool side_x_blocked = _board[side_x.y][side_x.x].get_status() == Tile::Status::Wall;
+        const bool side_y_blocked = _board[side_y.y][side_y.x].get_status() == Tile::Status::Wall;
+
+        if (policy == DiagonalMovePolicy::BlockIfEitherSideBlocked &&
+            (side_x_blocked || side_y_blocked))
+        {
+            continue;
+        }
+
+        if (policy == DiagonalMovePolicy::BlockIfBothSidesBlocked &&
+            side_x_blocked && side_y_blocked)
+        {
+            continue;
+        }
+
+        result.push_back(next);
     }
 
     return result;

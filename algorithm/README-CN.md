@@ -8,7 +8,7 @@
 
 ### 文件职责
 
-- `path_finder.h`：所有算法的基类，定义 `next_step()`、`clone()`、`mark_finished(...)`、`move_mode()` 等公共约定。
+- `path_finder.h`：所有算法的基类，定义 `next_step()`、通过 `CloneablePathfinder` 自动 clone、`mark_finished(...)`、`move_mode()` 等公共约定。
 - `bfs_pathfinder.*`：当前可参考的完整算法实现。
 - `a_star_pathfinder.*`：A* 算法入口，目前 `next_step()` 是占位。
 - `dijkstra_pathfinder.*`：Dijkstra 算法入口，目前 `next_step()` 是占位。
@@ -16,23 +16,19 @@
 
 ### 算法类必须遵守的接口约定
 
-每个算法类都应该继承 `Pathfinder`：
+每个算法类都应该继承 `CloneablePathfinder<YourPathfinder>`：
 
 ```cpp
-class YourPathfinder final : public Pathfinder
+class YourPathfinder final : public CloneablePathfinder<YourPathfinder>
 {
 public:
     void next_step() override;
-    [[nodiscard]] std::unique_ptr<Pathfinder> clone() const override
-    {
-        return std::make_unique<YourPathfinder>(*this);
-    }
 };
 ```
 
 `next_step()` 的职责是推进“一步”搜索，而不是完整搜索。这样 `SimulationController` 才能支持 `Next Step`、`Auto Run`、`Pause` 和 `Prev Step`。
 
-`clone()` 必须复制算法的内部状态。`SimulationController` 会在每一步之前保存算法副本和棋盘快照，用于上一步回退。
+`CloneablePathfinder` 会自动复制算法的内部状态。`SimulationController` 会在每一步之前保存算法副本和棋盘快照，用于上一步回退。
 
 ### 需要同步的状态
 
@@ -91,7 +87,7 @@ if (!current_board->in_bounds(_start) || !current_board->in_bounds(_goal))
 - A*：优先队列按最小 `f_cost = g_cost + h_cost` 取点。
 - Greedy：优先队列按最小 `h_cost` 取点。
 
-这些容器必须是算法类的成员变量，这样 `clone()` 才能完整复制当前搜索进度。
+这些容器必须是算法类的成员变量，这样自动 clone 才能完整复制当前搜索进度。
 
 #### 4. Tile::Status 可视化状态
 
@@ -187,7 +183,7 @@ for (const Point next : current_board->neighbors(current, move_mode()))
 `Prev Step` 依赖两个快照：
 
 - `Board::save_snapshot()` 保存棋盘格子状态。
-- `Pathfinder::clone()` 保存算法内部状态。
+- `CloneablePathfinder` 通过自动 `clone()` 保存算法内部状态。
 
 因此，任何影响搜索进度的数据都必须放在算法类成员变量中，并且能被拷贝构造正确复制，例如：
 
@@ -224,7 +220,7 @@ for (const Point next : current_board->neighbors(current, move_mode()))
 6. 遍历 `Board::neighbors(current, move_mode())`。
 7. 根据算法规则判断是否更新邻居的 `parent`、`g/h/f` 和状态。
 8. 找到终点后回溯 `parent`，标记 `Path`，再调用 `mark_finished(true)`。
-9. 确认 `clone()` 能复制所有搜索状态，然后测试 `Prev Step`。
+9. 确认自动 clone 能保留所有搜索状态，然后测试 `Prev Step`。
 
 ### 常见坑
 
