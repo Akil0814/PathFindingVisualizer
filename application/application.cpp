@@ -466,6 +466,15 @@ void Application::render_imgui()
 			SDL_OpenURL(kAboutAuthorUrl);
 		ImGui::PopStyleColor();
 
+		//Weight setting
+		ImGui::Spacing();
+		ImGui::Text("Weight Brush");
+		ImGui::Separator();
+		if (ImGui::SliderInt("Input weight", &_input_weight, 1, 10) && _board != nullptr)
+			_board->set_weight(_input_weight);
+		if (ImGui::Button("Use Weight Brush"))
+			_current_input = InputType::Weight;
+
 		//alg setting
 		ImGui::Spacing();
 		ImGui::Text("Algorithm:");
@@ -515,6 +524,9 @@ void Application::render_imgui()
 		}
 		ImGui::TextWrapped("Applies when Move mode is Eight Way.");
 
+		ImGui::Spacing();
+		ImGui::Text("Movement Cost");
+		ImGui::Separator();
 		MovementCostConfig movement_cost = _controller != nullptr ? _controller->movement_cost_config() : MovementCostConfig{};
 		bool movement_cost_changed = false;
 		movement_cost_changed |= ImGui::InputInt("Straight cost", &movement_cost.straight, 1, 10);
@@ -536,14 +548,6 @@ void Application::render_imgui()
 		ImGui::Separator();
 		if (ImGui::SliderFloat("Speed", &_auto_run_speed, 1.0f, 100.0f, "%.0f steps/s") && _controller != nullptr)
 			_controller->set_auto_run_speed(_auto_run_speed);
-
-		ImGui::Spacing();
-		ImGui::Text("Weight Brush");
-		ImGui::Separator();
-		if (ImGui::SliderInt("Input weight", &_input_weight, 1, 10) && _board != nullptr)
-			_board->set_weight(_input_weight);
-		if (ImGui::Button("Use Weight Brush"))
-			_current_input = InputType::Weight;
 
 		ImGui::Spacing();
 		ImGui::Text("State Machine:");
