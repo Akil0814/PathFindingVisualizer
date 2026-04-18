@@ -292,7 +292,7 @@ void Board::on_render(SDL_Renderer* renderer)
     draw_tile_info_panel(renderer);
 }
 
-void Board::on_update(double delta, InPutType input)
+void Board::on_update(double delta, InputType input)
 {
     _current_input = input;
 }
@@ -707,7 +707,7 @@ void Board::on_mouse_click(const SDL_Event& event)
 
     switch (_current_input)
     {
-    case InPutType::Empty:
+    case InputType::Empty:
         if (_start_pos_index.x == x && _start_pos_index.y == y)
             _start_pos_index = { -1, -1 };
 
@@ -717,7 +717,7 @@ void Board::on_mouse_click(const SDL_Event& event)
         tile.change_status(Tile::Status::Empty);
         break;
 
-    case InPutType::Wall:
+    case InputType::Wall:
         if (_start_pos_index.x == x && _start_pos_index.y == y)
             _start_pos_index = { -1, -1 };
 
@@ -727,7 +727,7 @@ void Board::on_mouse_click(const SDL_Event& event)
         tile.change_status(Tile::Status::Wall);
         break;
 
-    case InPutType::Start:
+    case InputType::Start:
         if (_end_pos_index.x == x && _end_pos_index.y == y)
             _end_pos_index = { -1, -1 };
 
@@ -741,7 +741,7 @@ void Board::on_mouse_click(const SDL_Event& event)
         tile.change_status(Tile::Status::Start);
         break;
 
-    case InPutType::Goal:
+    case InputType::Goal:
         if (_start_pos_index.x == x && _start_pos_index.y == y)
             _start_pos_index = { -1, -1 };
 
@@ -755,7 +755,7 @@ void Board::on_mouse_click(const SDL_Event& event)
         tile.change_status(Tile::Status::Goal);
         break;
 
-    case InPutType::Weight:
+    case InputType::Weight:
         tile._weight = _input_weight;
         break;
 

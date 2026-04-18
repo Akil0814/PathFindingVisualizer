@@ -325,7 +325,7 @@ void Application::on_render()
 	if (_error_message != nullptr)
 		_error_message->render(_renderer, _title_font, _width);
 
-	rend_imgui();
+	render_imgui();
 }
 
 void Application::on_update(double delta)
@@ -409,13 +409,20 @@ void Application::init()
 	if (_button_sound_up == nullptr)
 		SDL_Log("Mix_LoadWAV failed for click_up.wav: %s", Mix_GetError());
 
+	SDL_Surface* icon = IMG_Load("assets/icon/icon.png");
+	if (icon)
+	{
+		SDL_SetWindowIcon(_window, icon);
+		SDL_FreeSurface(icon);
+	}
+
 	_board->init(_renderer, _title_font);
 	_number_renderer = std::make_unique<NumberRenderer>(_renderer, _title_font, SDL_Color{ 15, 15, 15, 255 });
 
 	init_button();
 }
 
-void Application::rend_imgui()
+void Application::render_imgui()
 {
 	if (!_is_dev_mod)
 		return;
@@ -462,7 +469,7 @@ void Application::rend_imgui()
 				_controller->set_algorithm(static_cast<Algorithm>(algorithm_index));
 		}
 
-		if (_controller != nullptr && _controller->algorithm() == Algorithm::AStart)
+		if (_controller != nullptr && _controller->algorithm() == Algorithm::AStar)
 		{
 			ImGui::Spacing();
 			ImGui::Text("A* Heuristic");
@@ -512,12 +519,12 @@ void Application::rend_imgui()
 		if (ImGui::SliderInt("Input weight", &_input_weight, 1, 10) && _board != nullptr)
 			_board->set_weight(_input_weight);
 		if (ImGui::Button("Use Weight Brush"))
-			_current_input = InPutType::Weight;
+			_current_input = InputType::Weight;
 
 		ImGui::Spacing();
 		ImGui::Text("State Machine:");
 		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
-		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
+		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStar));
 		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
 		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
 		if (_controller != nullptr)
@@ -561,7 +568,7 @@ void Application::render_status_titles()
 	};
 
 	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 20 });
-	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 235 });
+	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStar), { 20, 235 });
 
 	render_title("Control", { 900, 180 });
 	render_title("Reset", { 900, 460 });
@@ -624,7 +631,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
 			return;
 
-		_current_input = InPutType::Start;
+		_current_input = InputType::Start;
 		});
 
 	rect_button = { 980,40,70,50 };
@@ -634,7 +641,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
 			return;
 
-		_current_input = InPutType::Goal;
+		_current_input = InputType::Goal;
 		});
 
 	rect_button = { 900,100,70,50 };
@@ -644,7 +651,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
 			return;
 
-		_current_input = InPutType::Wall;
+		_current_input = InputType::Wall;
 
 		});
 
@@ -655,7 +662,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
 			return;
 
-		_current_input = InPutType::Empty;
+		_current_input = InputType::Empty;
 		});
 
 	rect_button = { 20,250,150,50 };
@@ -665,7 +672,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
 			return;
 
-		_controller->set_algorithm(Algorithm::AStart);
+		_controller->set_algorithm(Algorithm::AStar);
 		});
 
 	rect_button = { 20,310,150,50 };
@@ -675,7 +682,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
 			return;
 
-		_controller->set_algorithm(Algorithm::Dijkstar);
+		_controller->set_algorithm(Algorithm::Dijkstra);
 		});
 
 	rect_button = { 20,370,150,50 };
@@ -744,7 +751,6 @@ void Application::init_button()
 			return;
 		}
 
-		std::cout << " Prev Step " << std::endl;
 		if (_controller == nullptr || !_controller->previous_step())
 		{
 			if (_error_message != nullptr)
@@ -752,12 +758,12 @@ void Application::init_button()
 		}
 		});
 
-	//board statse
+
+	//board states
 	rect_button = { 900,480,150,50 };
 	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Restart", true));
 	tmp->set_on_click([this] {
-		std::cout << "restart " << std::endl;
 		_controller->restart();
 		});
 
@@ -775,7 +781,6 @@ void Application::init_button()
 		{ 0, 0, 0, 255 })));
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
-		std::cout << "reset " << std::endl;
 		_board->reset();
 		_controller->restart();
 		});
@@ -819,7 +824,7 @@ void Application::init_button()
 		if (!validate_unlocked_operation("Reset or Restart before editing weight."))
 			return;
 
-		_current_input = InPutType::Weight;
+		_current_input = InputType::Weight;
 		});
 
 	rect_button = { 20,630,150,50 };

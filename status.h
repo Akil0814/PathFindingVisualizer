@@ -1,6 +1,6 @@
 #pragma once
 
-enum class InPutType
+enum class InputType
 {
 	Empty,      // Walkable tile
 	Wall,       // Blocked tile
@@ -11,8 +11,8 @@ enum class InPutType
 
 enum class Algorithm
 {
-	AStart,
-	Dijkstar,
+	AStar,
+	Dijkstra,
 	BFS,
 	Greedy,
 	Custom

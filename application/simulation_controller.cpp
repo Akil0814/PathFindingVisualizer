@@ -252,7 +252,7 @@ void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
 
     _a_star_heuristic = heuristic_mode;
 
-    if (_alg_using == Algorithm::AStart)
+    if (_alg_using == Algorithm::AStar)
         create_path_finder();
 }
 
@@ -286,10 +286,10 @@ void SimulationController::create_path_finder()
     case Algorithm::BFS:
         _path_finder = std::make_unique<BFSPathfinder>();
         break;
-    case Algorithm::Dijkstar:
+    case Algorithm::Dijkstra:
         _path_finder = std::make_unique<DijkstraPathfinder>();
         break;
-    case Algorithm::AStart:
+    case Algorithm::AStar:
     {
         auto finder = std::make_unique<AStarPathfinder>();
         finder->_heuristic_mode = _a_star_heuristic;

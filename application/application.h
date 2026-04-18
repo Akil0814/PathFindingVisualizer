@@ -28,7 +28,7 @@ private:
 	void on_update(double delta);
 	void on_input();
 
-	void rend_imgui();
+	void render_imgui();
 	void render_status_titles();
 	void clear_error_on_operation(const SDL_Event& event);
 	bool validate_unlocked_operation(const char* message);
@@ -57,7 +57,7 @@ private:
 	std::unique_ptr<ErrorMessage> _error_message;
 	std::unique_ptr<NumberRenderer> _number_renderer;
 
-	InPutType _current_input = InPutType::Empty;
+	InputType _current_input = InputType::Empty;
 
 	int _input_weight = 1;
 	float _auto_run_speed = 10.0f;

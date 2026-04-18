@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 #本工程的名字
-project(A-StatVisualizer)
+project(PathFindingStatVisualizer)
 
 #本工程支持的C++版本
 set(CMAKE_CXX_STANDARD 17)
@@ -26,12 +26,27 @@ elseif (MINGW)
 endif()
 
 add_subdirectory(imgui)
-add_subdirectory(appliction)
+add_subdirectory(application)
 add_subdirectory(algorithm)
 add_subdirectory(Aframework)
 
 #本工程所有cpp文件编译链接，生成exe
-add_executable(PathFindingVisualizer "main.cpp"  "status.h")
+set(PATH_FINDING_VISUALIZER_SOURCES
+    "main.cpp"
+    "status.h"
+)
+
+if(WIN32)
+    enable_language(RC)
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/assets/icon/app_icon.rc.in"
+        "${CMAKE_BINARY_DIR}/app_icon.rc"
+        @ONLY
+    )
+    list(APPEND PATH_FINDING_VISUALIZER_SOURCES "${CMAKE_BINARY_DIR}/app_icon.rc")
+endif()
+
+add_executable(PathFindingVisualizer ${PATH_FINDING_VISUALIZER_SOURCES})
 
 target_link_libraries(PathFindingVisualizer 
     applicationLib algorithmLib AframeworkLib imguiLib

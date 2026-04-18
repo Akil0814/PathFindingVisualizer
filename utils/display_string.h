@@ -7,29 +7,29 @@
 
 namespace DisplayString
 {
-	inline const char* input_type(InPutType input)
+	inline const char* input_type(InputType input)
 	{
 		switch (input)
 		{
-		case InPutType::Empty: return "Empty";
-		case InPutType::Wall: return "Wall";
-		case InPutType::Start: return "Start";
-		case InPutType::Goal: return "Goal";
-		case InPutType::Weight: return "Weight";
+		case InputType::Empty: return "Empty";
+		case InputType::Wall: return "Wall";
+		case InputType::Start: return "Start";
+		case InputType::Goal: return "Goal";
+		case InputType::Weight: return "Weight";
 
 		default: return "Unknown";
 		}
 	}
 
-	inline const char* edit_mode(InPutType input)
+	inline const char* edit_mode(InputType input)
 	{
 		switch (input)
 		{
-		case InPutType::Empty: return "Erase";
-		case InPutType::Wall: return "Wall";
-		case InPutType::Start: return "Start";
-		case InPutType::Goal: return "Goal";
-		case InPutType::Weight: return "Weight";
+		case InputType::Empty: return "Erase";
+		case InputType::Wall: return "Wall";
+		case InputType::Start: return "Start";
+		case InputType::Goal: return "Goal";
+		case InputType::Weight: return "Weight";
 
 		default: return "Unknown";
 		}
@@ -39,8 +39,8 @@ namespace DisplayString
 	{
 		switch (algorithm)
 		{
-		case Algorithm::AStart: return "A*";
-		case Algorithm::Dijkstar: return "Dijkstra";
+		case Algorithm::AStar: return "A*";
+		case Algorithm::Dijkstra: return "Dijkstra";
 		case Algorithm::BFS: return "BFS";
 		case Algorithm::Greedy: return "Greedy";
 		case Algorithm::Custom: return "Custom";

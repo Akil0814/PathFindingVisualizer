@@ -27,7 +27,7 @@ public:
 	void init(SDL_Renderer* renderer, TTF_Font* info_font);
 
 	void on_render(SDL_Renderer* renderer);
-	void on_update(double delta,InPutType input);
+	void on_update(double delta, InputType input);
 	void on_input(const SDL_Event& event);
 
 	void reset();
@@ -108,7 +108,7 @@ private:
 
 	TileBoard _board;
 	std::vector<BoardState> _board_snapshot;
-	InPutType _current_input = InPutType::Empty;
+	InputType _current_input = InputType::Empty;
 	std::unique_ptr<NumberRenderer> _number_renderer;
 	TTF_Font* _info_font = nullptr;
 

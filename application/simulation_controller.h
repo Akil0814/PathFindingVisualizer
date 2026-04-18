@@ -58,7 +58,7 @@ private:
 
 private:
     PlayMode _current_play_mod = PlayMode::Idle;
-    Algorithm _alg_using = Algorithm::AStart;
+    Algorithm _alg_using = Algorithm::AStar;
     MoveMode _move_mode = MoveMode::FourWay;
     DiagonalMovePolicy _diagonal_policy = DiagonalMovePolicy::BlockIfEitherSideBlocked;
     HeuristicMode _a_star_heuristic = HeuristicMode::Manhattan;
