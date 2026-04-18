@@ -1,6 +1,6 @@
 # 寻路算法实现指南
 
-这个目录保存 `Pathfinder` 基类、可用于学习与实验的空框架，以及默认算法实现。
+这个目录包含 `Pathfinder` 基类、用于学习与实验的算法空框架，以及项目默认提供的算法实现。
 
 项目结构的目标是让算法学习者只关注搜索逻辑本身，而不用处理 SDL 渲染、按钮事件、播放速度、暂停、重置或回退逻辑。
 
@@ -14,7 +14,18 @@
   - `CustomPathfinder` 没有 impl 文件故会回到根目录编译。
 - 学习/实验模式：`PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`
   - 编译根目录下的 `algorithm/*_pathfinder.cpp`。
-  - 这些文件只有实现空框架，方便实验与学校。
+  - 这些文件只保留空实现框架，方便实验与学习。
+
+```mermaid
+flowchart TD
+    A["CMake 配置 algorithm/CMakeLists.txt"] --> B{"PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS = ON ?"}
+    B -- "是" --> C["编译根目录 algorithm/*_pathfinder.cpp"]
+    B -- "否" --> D{"是否存在 algorithm/impl/*_pathfinder_impl.cpp ?"}
+    D -- "是" --> E["编译 impl 中的完整实现"]
+    D -- "否" --> C
+    C --> F["学习/实验算法实现"]
+    E --> G["默认完整算法实现"]
+```
 
 示例：
 
@@ -23,8 +34,8 @@ cmake -S . -B build -DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF
 cmake --build build --config Debug
 ```
 
-也可以直接去当前目录的Cmake文件将首行改为OFF，编译时则会默认使用根目录中的内容，
-注意：若是执行了这个操作可能会导致build文件有残留状态，需要清理全部的原始构建内容重新编译
+也可以直接把 `algorithm/CMakeLists.txt` 中该选项的默认值改为 `ON`，让新的 CMake 配置默认使用根目录中的学习/实验实现。
+注意：CMake 会缓存 option 的旧值。如果 `build/` 目录已经配置过，建议显式传入 `-DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`，或者清理旧构建目录后重新配置。
 
 ## 文件职责
 
@@ -53,7 +64,7 @@ public:
 };
 ```
 
-`next_step()` 的职责是推进“一步”可视化搜索，而不是一次跑完整个算法。这样 `SimulationController` 才能支持 `Next Step`、`Auto Run`、`Pause` 和 `Prev Step`。
+`next_step()` 的职责是推进一次可视化搜索步骤，而不是一次性执行完整个算法。这样 `SimulationController` 才能支持 `Next Step`、`Auto Run`、`Pause` 和 `Prev Step`。
 
 `CloneablePathfinder` 会自动复制算法内部状态。`SimulationController` 会在每一步之前保存算法副本和棋盘快照，用于上一步回退。
 
@@ -81,7 +92,7 @@ void close_current_tile(Point& current);
 bool rebuild_path(Point start, Point goal);
 ```
 
-这些 helper 会统一处理棋盘边界、起点终点保护、斜角策略、格子权重、可视化状态和最终路径重建。
+这些 helper 会统一处理棋盘边界、起点终点保护、斜角策略、格子权重、可视化状态维护以及最终路径重建。
 
 ## 需要同步的状态
 
@@ -194,13 +205,13 @@ int _f_cost = 0;
 set_tile_costs(next, next_g_cost, next_h_cost);
 ```
 
-移动代价已经集中在基类中：
+算法通过基类 helper 统一计算移动代价：
 
 ```cpp
 const int next_g_cost = current_tile._g_cost + movement_cost(current, next);
 ```
 
-移动代价由 `MovementCostConfig` 控制：
+实际移动代价由 `Board` 中的 `MovementCostConfig` 控制，`Pathfinder::movement_cost(...)` 会委托给 `Board::movement_cost(...)`：
 
 ```cpp
 struct MovementCostConfig
@@ -249,10 +260,13 @@ for (const Point next : neighbors(current))
 
 - Manhattan：`straight * (dx + dy)`。
 - Euclidean：`round(straight * sqrt(dx*dx + dy*dy))`。
-- Octile：`effective_diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`。
+- Octile：`diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`。
 - Chebyshev：`straight * max(dx, dy)`。
 
-`effective_diagonal` 最多会取到 `2 * straight`，这样在用户实验奇怪数值时启发函数更安全。对于八方向 A*，Octile 通常最贴合默认的 10/14 移动模型。
+这是标准 Octile 写法，直接使用当前配置中的 `diagonal`。对于八方向 A*，Octile 通常最贴合默认的 10/14 移动模型。
+
+如果把移动代价设置成非常规组合，例如斜走比直走还便宜，常规几何启发函数可能不再满足 A* 的最优性前提。这个配置可以用于实验，但不要把这种情况下的 A* 结果当作严格最优路径。
+
 
 ### 9. 上一步回退所需状态
 
@@ -305,4 +319,3 @@ for (const Point next : neighbors(current))
 - 找到终点后没有调用 `mark_finished(...)`，自动运行不会正确停止。
 - frontier 为空时没有调用 `mark_finished(false)`，搜索会卡在运行状态。
 - 内部状态没有放到成员变量，导致 `Prev Step` 回退后算法状态和棋盘状态不同步。
-- 八方向 A* 继续使用 Manhattan。Octile 通常更贴合当前移动模型。

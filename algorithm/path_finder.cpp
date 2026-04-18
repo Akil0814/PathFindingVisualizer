@@ -70,7 +70,6 @@ int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
     const int dy = std::abs(from.y - to.y);
     const int min_delta = std::min(dx, dy);
     const int max_delta = std::max(dx, dy);
-    const int diagonal_cost = std::min(config.diagonal, config.straight * 2);
 
     switch (mode)
     {
@@ -81,7 +80,7 @@ int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
         return static_cast<int>(std::round(config.straight * std::sqrt(dx * dx + dy * dy)));
 
     case HeuristicMode::Octile:
-        return diagonal_cost * min_delta + config.straight * (max_delta - min_delta);
+        return config.diagonal * min_delta + config.straight * (max_delta - min_delta);
 
     case HeuristicMode::Chebyshev:
         return config.straight * max_delta;

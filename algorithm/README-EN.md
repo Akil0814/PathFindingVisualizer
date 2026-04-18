@@ -247,10 +247,12 @@ The algorithm still needs to handle its own visited, closed, or better-path chec
 
 - Manhattan: `straight * (dx + dy)`.
 - Euclidean: `round(straight * sqrt(dx*dx + dy*dy))`.
-- Octile: `effective_diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`.
+- Octile: `diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`.
 - Chebyshev: `straight * max(dx, dy)`.
 
-`effective_diagonal` is clamped to at most `2 * straight` for heuristic safety when users experiment with unusual values. For eight-way A*, Octile is usually the best match for the default 10/14 movement model.
+This is the standard Octile form and uses the configured `diagonal` value directly. For eight-way A*, Octile is usually the best match for the default 10/14 movement model.
+
+If movement costs are set to unusual combinations, such as diagonal being cheaper than straight, common geometric heuristics may no longer satisfy A*'s optimality assumptions. Such settings are useful for experiments, but the A* result should not be treated as a guaranteed optimal path.
 
 ### 9. State required for previous-step undo
 
