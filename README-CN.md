@@ -1,14 +1,14 @@
 # PathFindingVisualizer
 
-`PathFindingVisualizer` 是一个使用 C++17、SDL2 和 Dear ImGui 开发的桌面寻路算法可视化项目。
+`PathFindingVisualizer` 是一个桌面寻路算法可视化项目，基于 C++17、SDL2 和 Dear ImGui 构建。
 
-在 20 x 20 的网格中，你可以放置起点、终点、墙体，设置格子权重，并通过单步执行或自动运行观察算法如何搜索路径。
+它提供一个 20 × 20 的交互式网格环境，支持放置起点、终点、墙体和权重格子，并可通过单步执行或自动运行观察算法的搜索过程。
 
 ## 算法相关
 
 - A*、Dijkstra、BFS、Greedy Best-First Search 的完整默认实现位于 `algorithm/impl/`。
-- `CustomPathfinder` 未提供任何内置实现，可用于你自己实验算法。该算法只能从 ImGui 的 Dev Options 面板中选择启用。
-- 根目录下的 `algorithm/*_pathfinder.cpp` 是学习用空框架，只在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时参与编译。
+- `CustomPathfinder` 默认不提供内置实现，可用于你自行实验和扩展算法。该选项仅可在 ImGui 的 Dev Options 面板中启用。
+- 根目录下的 `algorithm/*_pathfinder.cpp` 提供学习用空框架，仅在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时参与编译。
 - 默认构建会使用 `algorithm/impl/` 中提供的算法的完整实现。
 
 ## 功能
@@ -52,7 +52,7 @@ ImGui 窗口：
 |-- main.cpp                         # 程序入口
 |-- CMakeLists.txt                   # 根 CMake 配置
 |-- status.h                         # 输入、算法、状态、移动模式、启发函数等共享枚举
-|-- application/                      # 应用主循环和模拟控制器
+|-- application/                     # 应用主循环和模拟控制器
 |-- Aframework/                      # 棋盘、格子、按钮、文字纹理和 UI 基础组件
 |-- algorithm/                       # Pathfinder 基类、学习空框架和算法说明
 |-- algorithm/impl/                  # 默认完整算法实现
@@ -64,7 +64,7 @@ ImGui 窗口：
 
 ## 环境要求
 
-- Windows x64。
+- 当前主要在 Windows x64 环境下开发与测试。
 - Visual Studio 2022，或其他支持 C++17 的编译器。
 - CMake 3.12 或更高版本。
 
@@ -160,6 +160,8 @@ public:
 
 - [algorithm/README-EN.md](algorithm/README-EN.md)
 - [algorithm/README-CN.md](algorithm/README-CN.md)
+
+更多工程实现细节、架构设计与模块拆解可参考[项目页面](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html)。
 
 ## 资源和第三方代码
 
