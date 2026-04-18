@@ -5,6 +5,7 @@
 #include "../imgui/imgui_impl_sdlrenderer2.h"
 #include "../Aframework/txt_texture_manager.h"
 #include "../utils/display_string.h"
+#include "../utils/resource_path.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -81,10 +82,11 @@ namespace
 		if (renderer == nullptr || path == nullptr)
 			return nullptr;
 
-		SDL_Surface* surface = IMG_Load(path);
+		const std::string full_path = ResourcePath::asset(path);
+		SDL_Surface* surface = IMG_Load(full_path.c_str());
 		if (surface == nullptr)
 		{
-			SDL_Log("IMG_Load failed for %s: %s", path, IMG_GetError());
+			SDL_Log("IMG_Load failed for %s: %s", full_path.c_str(), IMG_GetError());
 			return nullptr;
 		}
 
@@ -92,7 +94,7 @@ namespace
 		SDL_FreeSurface(surface);
 
 		if (texture == nullptr)
-			SDL_Log("SDL_CreateTextureFromSurface failed for %s: %s", path, SDL_GetError());
+			SDL_Log("SDL_CreateTextureFromSurface failed for %s: %s", full_path.c_str(), SDL_GetError());
 
 		return texture;
 	}
@@ -398,18 +400,24 @@ void Application::init()
 	_edit_button_manager = std::make_unique<ButtonManager>();
 	_error_message = std::make_unique<ErrorMessage>();
 
-	_button_font = TTF_OpenFont("assets/font/Frick.otf", 22);
-	init_assert(_button_font != nullptr, TTF_GetError());
-	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
-	init_assert(_title_font != nullptr, TTF_GetError());
-	_button_sound_down = Mix_LoadWAV("assets/sound/click_down.wav");
-	if (_button_sound_down == nullptr)
-		SDL_Log("Mix_LoadWAV failed for click_down.wav: %s", Mix_GetError());
-	_button_sound_up = Mix_LoadWAV("assets/sound/click_up.wav");
-	if (_button_sound_up == nullptr)
-		SDL_Log("Mix_LoadWAV failed for click_up.wav: %s", Mix_GetError());
+	const std::string button_font_path = ResourcePath::asset("font/Frick.otf");
+	const std::string title_font_path = ResourcePath::asset("font/Frick.otf");
+	const std::string click_down_path = ResourcePath::asset("sound/click_down.wav");
+	const std::string click_up_path = ResourcePath::asset("sound/click_up.wav");
+	const std::string icon_path = ResourcePath::asset("icon/icon.png");
 
-	SDL_Surface* icon = IMG_Load("assets/icon/icon.png");
+	_button_font = TTF_OpenFont(button_font_path.c_str(), 22);
+	init_assert(_button_font != nullptr, TTF_GetError());
+	_title_font = TTF_OpenFont(title_font_path.c_str(), 16);
+	init_assert(_title_font != nullptr, TTF_GetError());
+	_button_sound_down = Mix_LoadWAV(click_down_path.c_str());
+	if (_button_sound_down == nullptr)
+		SDL_Log("Mix_LoadWAV failed for %s: %s", click_down_path.c_str(), Mix_GetError());
+	_button_sound_up = Mix_LoadWAV(click_up_path.c_str());
+	if (_button_sound_up == nullptr)
+		SDL_Log("Mix_LoadWAV failed for %s: %s", click_up_path.c_str(), Mix_GetError());
+
+	SDL_Surface* icon = IMG_Load(icon_path.c_str());
 	if (icon)
 	{
 		SDL_SetWindowIcon(_window, icon);

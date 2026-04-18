@@ -1,6 +1,7 @@
 #include "board.h"
 #include "txt_texture_manager.h"
 #include "../utils/display_string.h"
+#include "../utils/resource_path.h"
 
 #include <cassert>
 #include <cmath>
@@ -131,10 +132,11 @@ void Board::init(SDL_Renderer* renderer, TTF_Font* info_font)
 
     auto load_texture = [&](const char* path) -> SDL_Texture*
         {
-            SDL_Surface* surface = IMG_Load(path);
+            const std::string full_path = ResourcePath::asset(path);
+            SDL_Surface* surface = IMG_Load(full_path.c_str());
             if (!surface)
             {
-                SDL_Log("IMG_Load failed: %s", IMG_GetError());
+                SDL_Log("IMG_Load failed for %s: %s", full_path.c_str(), IMG_GetError());
                 return nullptr;
             }
 
