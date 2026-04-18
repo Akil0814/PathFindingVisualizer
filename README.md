@@ -45,4 +45,4 @@
 
 ## More Details / 更多说明
 
- For architecture notes, implementation details, and design decisions, see [README-CN.md](README-CN.md). / 更多架构说明、实现细节与设计说明见 [README-CN.md](README-CN.md)。
+ For architecture notes, implementation details, and design decisions, see [README-EN.md](README-EN.md). / 更多架构说明、实现细节与设计说明见 [README-CN.md](README-CN.md)。
