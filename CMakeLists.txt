@@ -1,17 +1,13 @@
-#需求的最低cmake程序版本
 cmake_minimum_required(VERSION 3.12)
 
-#本工程的名字
 project(PathFindingStatVisualizer)
 
-#本工程支持的C++版本
 set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
-#把需要拷贝的资源路径都放到ASSETS里
 file(GLOB ASSETS "./assets")
 file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})
 
@@ -30,7 +26,6 @@ add_subdirectory(application)
 add_subdirectory(algorithm)
 add_subdirectory(Aframework)
 
-#本工程所有cpp文件编译链接，生成exe
 set(PATH_FINDING_VISUALIZER_SOURCES
     "main.cpp"
     "status.h"
@@ -47,6 +42,12 @@ if(WIN32)
 endif()
 
 add_executable(PathFindingVisualizer ${PATH_FINDING_VISUALIZER_SOURCES})
+
+if(WIN32)
+    set_target_properties(PathFindingVisualizer PROPERTIES
+        WIN32_EXECUTABLE "$<CONFIG:Release>"
+    )
+endif()
 
 target_link_libraries(PathFindingVisualizer 
     applicationLib algorithmLib AframeworkLib imguiLib
