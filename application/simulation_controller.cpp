@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <iostream>
 
 SimulationController::SimulationController(Board* board)
     : _board(board)
@@ -70,6 +71,8 @@ void SimulationController::next_step()
         return;
     }
 
+    std::cout << "-------------next step--------------" << std::endl;
+
     set_board_edit_locked(true);
     save_history_state();
     _board->save_snapshot();
@@ -91,6 +94,8 @@ bool SimulationController::previous_step()
 
     if (!_board->undo())
         return false;
+
+    std::cout << "------------previous step-----------" << std::endl;
 
     HistoryState state = std::move(_history.back());
     _history.pop_back();
@@ -118,7 +123,7 @@ void SimulationController::pause()
 {
     if (!is_auto_running())
         return;
-
+    std::cout<<"---------------pause---------------" << std::endl;
     _auto_run = false;
     _current_play_mod = PlayMode::Pause;
     _timer = 0.0;
@@ -200,6 +205,7 @@ Algorithm SimulationController::algorithm() const
 
 void SimulationController::set_auto_run(bool enabled)
 {
+    std::cout << "--------------auto run--------------" << std::endl;
     _auto_run = enabled;
     _current_play_mod = enabled ? PlayMode::AutoRun : PlayMode::Pause;
     _timer = 0.0;

@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
-#include<iostream>
 #include <string>
 #include<SDL.h>
 #include <SDL_ttf.h>//字体库
@@ -742,7 +741,6 @@ void Application::init_button()
 		if (!validate_path_request())
 			return;
 
-		std::cout << "start " << std::endl;
 		_controller->set_auto_run(true);
 		});
 
@@ -765,7 +763,6 @@ void Application::init_button()
 		if (!validate_path_request())
 			return;
 
-		std::cout << "Next Step" << std::endl;
 		_controller->next_step();
 		});
 
@@ -779,7 +776,6 @@ void Application::init_button()
 				_error_message->show("Pause before undo.");
 			return;
 		}
-
 		if (_controller == nullptr || !_controller->previous_step())
 		{
 			if (_error_message != nullptr)
