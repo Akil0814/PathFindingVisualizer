@@ -45,7 +45,7 @@ void GreedyPathfinder::next_step()
 
         _visited[next.y][next.x] = true;
 
-        const int next_g_cost = current_tile._g_cost + tile_weight(next);
+        const int next_g_cost = current_tile._g_cost + movement_cost(current, next);
         const int next_h_cost = heuristic_cost(next, _goal, heuristic_mode);
 
         set_tile_parent(next, current);

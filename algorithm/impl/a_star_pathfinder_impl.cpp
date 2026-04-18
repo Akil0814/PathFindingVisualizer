@@ -42,7 +42,7 @@ void AStarPathfinder::next_step()
         // Relax all neighbors: a lower g cost means this route is better.
         for (const Point next : neighbors(current))
         {
-            const int next_g_cost = current_tile._g_cost + tile_weight(next);
+            const int next_g_cost = current_tile._g_cost + movement_cost(current, next);
             if (next_g_cost >= _best_cost[next.y][next.x])
                 continue;
 

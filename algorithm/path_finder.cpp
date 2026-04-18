@@ -50,28 +50,35 @@ int Pathfinder::tile_weight(Point point) const
     return current_board->tile_at(point)._weight;
 }
 
+int Pathfinder::movement_cost(Point from, Point to) const
+{
+    const int dx = std::abs(from.x - to.x);
+    const int dy = std::abs(from.y - to.y);
+    const bool diagonal = dx != 0 && dy != 0;
+    const int base_cost = diagonal ? 14 : 10;
+
+    return base_cost * tile_weight(to);
+}
+
 int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
 {
-    // Heuristic values are intentionally integral because tile costs are displayed as ints.
+    // Heuristics use the same 10/14 scale as movement cost.
     const int dx = std::abs(from.x - to.x);
     const int dy = std::abs(from.y - to.y);
 
     switch (mode)
     {
     case HeuristicMode::Manhattan:
-        return dx + dy;
+        return 10 * (dx + dy);
 
     case HeuristicMode::Euclidean:
-        return static_cast<int>(std::round(std::sqrt(dx * dx + dy * dy)));
+        return static_cast<int>(std::round(10.0 * std::sqrt(dx * dx + dy * dy)));
 
     case HeuristicMode::Octile:
-    {
-        constexpr double diagonal_factor = 1.41421356237 - 1.0;
-        return static_cast<int>(std::round(std::max(dx, dy) + diagonal_factor * std::min(dx, dy)));
-    }
+        return 14 * std::min(dx, dy) + 10 * (std::max(dx, dy) - std::min(dx, dy));
 
     case HeuristicMode::Chebyshev:
-        return std::max(dx, dy);
+        return 10 * std::max(dx, dy);
 
     default:
         return 0;

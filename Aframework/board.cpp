@@ -45,6 +45,16 @@ namespace
 
         return 0;
     }
+
+    int movement_cost(Point from, Point to, int weight)
+    {
+        const int dx = std::abs(from.x - to.x);
+        const int dy = std::abs(from.y - to.y);
+        const bool diagonal = dx != 0 && dy != 0;
+        const int base_cost = diagonal ? 14 : 10;
+
+        return base_cost * weight;
+    }
 }
 
 Board::Board()
@@ -422,8 +432,37 @@ int Board::path_cost() const
             return cost;
 
         const Tile& tile = _board[current.y][current.x];
-        cost += tile._weight;
-        current = tile.get_parent();
+        const Point parent = tile.get_parent();
+        if (!is_valid_tile_index(parent))
+            return 0;
+
+        cost += movement_cost(parent, current, tile._weight);
+        current = parent;
+    }
+
+    return 0;
+}
+
+int Board::path_steps() const
+{
+    if (!is_valid_tile_index(_start_pos_index) || !is_valid_tile_index(_end_pos_index))
+        return 0;
+
+    int steps = 0;
+    int guard = _row * _col;
+    Point current = _end_pos_index;
+
+    while (is_valid_tile_index(current) && guard-- > 0)
+    {
+        if (current.x == _start_pos_index.x && current.y == _start_pos_index.y)
+            return steps;
+
+        const Point parent = _board[current.y][current.x].get_parent();
+        if (!is_valid_tile_index(parent))
+            return 0;
+
+        ++steps;
+        current = parent;
     }
 
     return 0;

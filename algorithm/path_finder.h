@@ -72,6 +72,7 @@ protected:
     [[nodiscard]] bool same_point(Point lhs, Point rhs) const;
     [[nodiscard]] bool is_start_or_goal(Point point) const;
     [[nodiscard]] int tile_weight(Point point) const;
+    [[nodiscard]] int movement_cost(Point from, Point to) const;
     [[nodiscard]] int heuristic_cost(Point from, Point to, HeuristicMode mode) const;
 
     void clear_tile_path_data(Point point);

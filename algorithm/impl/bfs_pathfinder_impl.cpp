@@ -46,7 +46,7 @@ void BFSPathfinder::next_step()
         _visited[next.y][next.x] = true;
 
         set_tile_parent(next, current);
-        set_tile_costs(next, current_tile._g_cost + tile_weight(next), 0);
+        set_tile_costs(next, current_tile._g_cost + movement_cost(current, next), 0);
         mark_tile_open(next);
 
         _frontier.push(next);

@@ -51,6 +51,7 @@ public:
 	const Tile& tile_at(Point index) const;
 	[[nodiscard]] std::vector<Point> neighbors(Point index, MoveMode move_mode, DiagonalMovePolicy policy) const;
 	[[nodiscard]] int path_cost() const;
+	[[nodiscard]] int path_steps() const;
 
 	bool is_inside(int x, int y) const;
 	void save_snapshot();

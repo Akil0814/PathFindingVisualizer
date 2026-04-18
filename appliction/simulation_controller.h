@@ -21,6 +21,7 @@ public:
 
     [[nodiscard]] int total_cost() const;
     [[nodiscard]] int total_steps() const;
+    [[nodiscard]] int path_steps() const;
     [[nodiscard]] bool is_board_edit_locked() const;
     [[nodiscard]] bool is_auto_running() const;
     [[nodiscard]] bool is_pathfinder_finished() const;
@@ -48,6 +49,7 @@ private:
         double timer = 0.0;
         int total_cost = 0;
         int total_steps = 0;
+        int path_steps = 0;
     };
 
     void create_path_finder();
@@ -70,5 +72,6 @@ private:
     double _step_interval = 0.1;
     int _total_cost = 0;
     int _total_steps = 0;
+    int _path_steps = 0;
     std::vector<HistoryState> _history;
 };

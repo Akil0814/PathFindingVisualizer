@@ -72,6 +72,7 @@ void SimulationController::next_step()
     if (_path_finder->is_finished())
     {
         _total_cost = _path_finder->found_path() ? _board->path_cost() : 0;
+        _path_steps = _path_finder->found_path() ? _board->path_steps() : 0;
         set_auto_run(false);
     }
 }
@@ -100,6 +101,7 @@ bool SimulationController::previous_step()
     _timer = 0.0;
     _total_cost = state.total_cost;
     _total_steps = state.total_steps;
+    _path_steps = state.path_steps;
 
     set_board_edit_locked(true);
     return true;
@@ -123,6 +125,7 @@ void SimulationController::restart()
     _timer = 0.0;
     _total_cost = 0;
     _total_steps = 0;
+    _path_steps = 0;
     _history.clear();
     set_board_edit_locked(false);
 
@@ -140,6 +143,11 @@ int SimulationController::total_cost() const
 int SimulationController::total_steps() const
 {
     return _total_steps;
+}
+
+int SimulationController::path_steps() const
+{
+    return _path_steps;
 }
 
 bool SimulationController::is_board_edit_locked() const
@@ -312,6 +320,7 @@ void SimulationController::save_history_state()
     state.timer = _timer;
     state.total_cost = _total_cost;
     state.total_steps = _total_steps;
+    state.path_steps = _path_steps;
 
     _history.push_back(std::move(state));
 }

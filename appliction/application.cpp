@@ -419,47 +419,27 @@ void Application::rend_imgui()
 	ImGui::SetNextWindowSize(ImVec2(360.0f, 390.0f), ImGuiCond_FirstUseEver);
 
 	bool dev_mode_open = _is_dev_mod;
-	if (ImGui::Begin("Dev Debug", &dev_mode_open))
+	if (ImGui::Begin("Dev Options", &dev_mode_open))
 	{
+		// my inform
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(250.0f / 255.0f, 142.0f / 255.0f, 225.0f / 255.0f, 1.0f));
-		ImGui::Text("More information:");
+		ImGui::Text("More information about project:");
 		if (ImGui::Selectable(kMoreInformationUrl, false))
 			SDL_OpenURL(kMoreInformationUrl);
 		ImGui::Text("About author:");
 		if (ImGui::Selectable(kAboutAuthorUrl, false))
 			SDL_OpenURL(kAboutAuthorUrl);
 		ImGui::PopStyleColor();
-		ImGui::Separator();
 
-		ImGui::Text("Application");
+		//alg setting
+		ImGui::Spacing();
+		ImGui::Text("Algorithm:");
 		ImGui::Separator();
-		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
-		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
-		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
-		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
 		int algorithm_index = _controller != nullptr ? static_cast<int>(_controller->algorithm()) : 0;
 		if (ImGui::Combo("Algorithm", &algorithm_index, "A Star\0Dijkstra\0BFS\0Greedy\0Custom\0\0"))
 		{
 			if (validate_unlocked_operation("Reset or Restart before changing algorithm.") && _controller != nullptr)
 				_controller->set_algorithm(static_cast<Algorithm>(algorithm_index));
-		}
-
-		ImGui::Spacing();
-		ImGui::Text("State Machine");
-		ImGui::Separator();
-		if (_controller != nullptr)
-		{
-			ImGui::Text("Sim state: %s", DisplayString::sim_state(_controller->sim_state()));
-			ImGui::Text("Play mode: %s", DisplayString::play_mode(_controller->play_mode()));
-			ImGui::Text("Board edit: %s", _controller->is_board_edit_locked() ? "Locked" : "Unlocked");
-			ImGui::Text("Auto run: %s", _controller->is_auto_running() ? "true" : "false");
-			ImGui::Text("Pathfinder: %s", _controller->is_pathfinder_finished() ? "Finished" : "Active");
-			ImGui::Text("Found path: %s", _controller->found_path() ? "true" : "false");
-			ImGui::TextWrapped("Flow: Editing -> Running -> Finished -> Restart/Reset -> Editing");
-		}
-		else
-		{
-			ImGui::Text("Controller: null");
 		}
 
 		if (_controller != nullptr && _controller->algorithm() == Algorithm::AStart)
@@ -501,7 +481,7 @@ void Application::rend_imgui()
 		ImGui::TextWrapped("Applies when Move mode is Eight Way.");
 
 		ImGui::Spacing();
-		ImGui::Text("Auto Run");
+		ImGui::Text("Auto Run Options");
 		ImGui::Separator();
 		if (ImGui::SliderFloat("Speed", &_auto_run_speed, 1.0f, 100.0f, "%.0f steps/s") && _controller != nullptr)
 			_controller->set_auto_run_speed(_auto_run_speed);
@@ -515,23 +495,27 @@ void Application::rend_imgui()
 			_current_input = InPutType::Weight;
 
 		ImGui::Spacing();
-		ImGui::Text("Mouse");
-		ImGui::Separator();
-		ImGui::Text("Position: %d, %d", mouse_x, mouse_y);
-		ImGui::Text("Inside board: %s", (_board != nullptr && _board->is_inside(mouse_x, mouse_y)) ? "true" : "false");
-
-		ImGui::Spacing();
-		ImGui::Text("Tools");
-		ImGui::Separator();
-		if (ImGui::Button("Reset Board") && _board != nullptr)
+		ImGui::Text("State Machine:");
+		ImGui::Text("Input mode: %s", DisplayString::input_type(_current_input));
+		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart));
+		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
+		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
+		if (_controller != nullptr)
 		{
-			_board->reset();
-			if (_controller != nullptr)
-				_controller->restart();
+			ImGui::Text("Sim state: %s", DisplayString::sim_state(_controller->sim_state()));
+			ImGui::Text("Play mode: %s", DisplayString::play_mode(_controller->play_mode()));
+			ImGui::Text("Board edit: %s", _controller->is_board_edit_locked() ? "Locked" : "Unlocked");
+			ImGui::Text("Auto run: %s", _controller->is_auto_running() ? "true" : "false");
+			ImGui::Text("Pathfinder: %s", _controller->is_pathfinder_finished() ? "Finished" : "Active");
+			ImGui::Text("Found path: %s", _controller->found_path() ? "true" : "false");
+			ImGui::TextWrapped("Flow: Editing -> Running -> Finished -> Restart/Reset -> Editing");
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("Quit"))
-			_active = false;
+		else
+		{
+			ImGui::Text("Controller: null");
+		}
+		ImGui::Text("Mouse Position: %d, %d", mouse_x, mouse_y);
+		ImGui::Text("Mouse Inside board: %s", (_board != nullptr && _board->is_inside(mouse_x, mouse_y)) ? "true" : "false");
 	}
 	ImGui::End();
 
@@ -557,7 +541,7 @@ void Application::render_status_titles()
 	};
 
 	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 20 });
-	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 212 });
+	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 220 });
 
 	render_title("Control", { 900, 180 });
 	render_title("Reset", { 900, 460 });
@@ -576,13 +560,16 @@ void Application::render_status_titles()
 	render_title(status_text, { 900, 640 });
 
 	const int total_steps = _controller != nullptr ? _controller->total_steps() : 0;
+	const int path_steps = _controller != nullptr ? _controller->path_steps() : 0;
 	const int total_cost = _controller != nullptr ? _controller->total_cost() : 0;
-	render_title("Total Steps:", { 20, 170 });//一共走了多少格子
-	render_title("Total Cost:", { 20, 190 });//这条路径的总花费
+	render_title("Total Steps:", { 20, 160 });//一共走了多少格子
+	render_title("Path Steps:", { 20, 180 });//找到的路径一共走了多少步
+	render_title("Total Cost:", { 20, 200 });//这条路径的总花费
 	if (_number_renderer != nullptr)
 	{
-		_number_renderer->render_number(total_steps, { 150, 168, 42, 18 });
-		_number_renderer->render_number(total_cost, { 140, 188, 52, 18 });
+		_number_renderer->render_number(total_steps, { 150, 158, 42, 18 });
+		_number_renderer->render_number(path_steps, { 140, 178, 52, 18 });
+		_number_renderer->render_number(total_cost, { 140, 198, 52, 18 });
 	}
 
 	if(_is_dev_mod)
@@ -643,7 +630,7 @@ void Application::init_button()
 		_current_input = InPutType::Empty;
 		});
 
-	rect_button = { 20,230,150,50 };
+	rect_button = { 20,240,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
@@ -653,7 +640,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::AStart);
 		});
 
-	rect_button = { 20,290,150,50 };
+	rect_button = { 20,300,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
@@ -663,7 +650,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::Dijkstar);
 		});
 
-	rect_button = { 20,350,150,50 };
+	rect_button = { 20,360,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
@@ -673,7 +660,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::BFS);
 		});
 
-	rect_button = { 20,410,150,50 };
+	rect_button = { 20,420,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
