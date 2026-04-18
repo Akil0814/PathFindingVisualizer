@@ -1,61 +1,77 @@
 # PathFindingVisualizer
 
-`PathFindingVisualizer` is a C++17 desktop path-finding visualizer built with SDL2 and Dear ImGui.
+`PathFindingVisualizer` is a desktop pathfinding visualization project built with C++17, SDL2, and Dear ImGui.
 
-The app provides an interactive 20 x 20 grid where you can place a start tile, a goal tile, walls, and weighted tiles, then watch several path-finding algorithms advance step by step or run automatically.
+It provides an interactive 20 × 20 grid environment where you can place a start point, a goal point, walls, and weighted tiles, then observe the search process through step-by-step execution or auto-run.
 
-## Current Status
+## Algorithms
 
-- A*, Dijkstra, BFS, and Greedy Best-First Search have complete built-in implementations under `algorithm/impl/`.
-- `CustomPathfinder` is intentionally empty and is meant for user experiments. It can be selected from the ImGui Dev Options panel.
-- The root `algorithm/*_pathfinder.cpp` files are learning stubs. They compile only when `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`.
-- The default build uses the complete implementations in `algorithm/impl/`.
+- The complete default implementations of A*, Dijkstra, BFS, and Greedy Best-First Search are located in `algorithm/impl/`.
+- `CustomPathfinder` does not provide a built-in implementation by default and is intended for your own experimentation and extension. This option can only be enabled from the ImGui Dev Options panel.
+- The root-level `algorithm/*_pathfinder.cpp` files provide learning-oriented empty skeletons and are compiled only when `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`.
+- The default build uses the complete implementations provided in `algorithm/impl/`.
 
 ## Features
 
-- Visual 20 x 20 grid board.
-- Edit tools for start, goal, wall, erase, and weighted tiles.
-- Algorithm buttons for A*, Dijkstra, BFS, and Greedy.
-- Custom algorithm selection from the ImGui Dev Options panel.
-- Auto-run, pause, next-step, previous-step, restart, and reset controls.
-- Board editing is locked while a search is running.
-- Four-way and eight-way movement.
-- Three diagonal movement policies:
-  - `Strict No Corner Cutting`: block a diagonal if either side tile is blocked.
-  - `No Corner Cutting`: block a diagonal only if both side tiles are blocked.
-  - `Allow Corner Cutting`: ignore side tiles for diagonal movement.
-- Weighted tiles from 1 to 10.
-- Movement cost is configurable from Dev Options. The default is `10 * weight` for straight moves and `14 * weight` for diagonal moves.
-- Counters for total search steps, final path steps, and final path cost.
-- Directional open/current/path/closed textures use parent links to point toward the previous tile.
-- Dev Options panel supports algorithm selection, A* heuristic selection, movement mode, diagonal policy, auto-run speed, weight brush, state inspection, and mouse/tile debugging.
+### Default Features
 
-## Project Layout
+- A 20 × 20 visual grid board.
+- Supports placing the start point, goal point, walls, and tile weights.
+- The buttons on the left allow selecting A*, Dijkstra, BFS, and Greedy.
+- Supports auto-run, pause, next step, previous step, restart search, and reset board.
+- When the mouse hovers over a tile, detailed information about that tile is shown in the upper-left corner.
+- Displays total search steps, final path steps, and final path total cost.
+- Directional textures such as Open, Current, Path, and Closed follow the parent chain and point toward the parent tile.
+
+### Developer Features
+
+#### Click the small wrench in the lower-left corner to open the ImGui debug window
+
+Dev mode adds extra buttons:
+- Show tile weights.
+- Edit tile weight settings.
+- Show the cost of each visited tile.
+
+ImGui window:
+- Select the Custom algorithm.
+- Select the A* heuristic.
+- Choose between 4-direction and 8-direction movement.
+- In 8-direction mode, three diagonal movement policies are supported:
+  - `Strict No Corner Cutting`: if either of the two side-adjacent tiles is a wall, diagonal movement is blocked.
+  - `No Corner Cutting`: diagonal movement is blocked only if both side-adjacent tiles are walls.
+  - `Allow Corner Cutting`: side-adjacent tiles are not checked, and diagonal movement through corners is allowed.
+- Edit the weight of a single tile (1-10).
+- Configure the global per-step movement cost for straight / diagonal movement. By default, straight movement is `10 * weight` and diagonal movement is `14 * weight`.
+- Configure the auto-run speed.
+- View global state machine information.
+
+## Project Structure
 
 ```text
 .
-|-- main.cpp                         # Program entry point
+|-- main.cpp                         # Program entry
 |-- CMakeLists.txt                   # Root CMake configuration
-|-- status.h                         # Shared enums for input, algorithms, state, movement, and heuristics
-|-- appliction/                      # Application loop and simulation controller
-|-- Aframework/                      # Board, tile, button, text texture, and UI helpers
-|-- algorithm/                       # Pathfinder base class, learning stubs, and implementation guide
+|-- status.h                         # Shared enums for input, algorithms, states, movement modes, heuristics, etc.
+|-- application/                     # Application main loop and simulation controller
+|-- Aframework/                      # Board, tiles, buttons, text textures, and basic UI components
+|-- algorithm/                       # Pathfinder base class, learning skeletons, and algorithm documentation
 |-- algorithm/impl/                  # Default complete algorithm implementations
-|-- assets/                          # Fonts, textures, and sound assets
-|-- imgui/                           # Dear ImGui source and SDL renderer backend
+|-- assets/                          # Fonts, textures, and audio resources
+|-- imgui/                           # Dear ImGui source and SDL rendering backend
 |-- thirdparty/                      # SDL2 headers, import libraries, and DLLs
-`-- utils/                           # Shared display-string helpers
+`-- utils/                           # Common display string utilities
 ```
-
-Note: the current directory name is `appliction`. The CMake files and source includes use this spelling, so keep it unless you update every reference.
 
 ## Requirements
 
-- Windows x64.
-- Visual Studio 2022, or another C++17-capable compiler.
-- CMake 3.12 or newer.
+- The project is currently developed and tested primarily on Windows x64.
+- Visual Studio 2022, or another compiler with C++17 support.
+- CMake 3.12 or later.
 
-The repository already includes the SDL2 headers, import libraries, and DLLs under `thirdparty/`, so the bundled Windows build does not require extra SDL package manager setup.
+The repository already includes the SDL2 headers, import libraries, and DLLs required for Windows builds in `thirdparty/`, so no extra SDL installation through a package manager is required for the current setup.
+
+- Verified with both MSVC and MinGW builds.
+- Non-Windows builds use pkg-config to locate SDL2 dependencies; macOS has not yet been tested.
 
 ## Build
 
@@ -66,14 +82,14 @@ cmake -S . -B build -A x64 -DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF
 cmake --build build --config Debug
 ```
 
-Learning mode uses the root `algorithm/*_pathfinder.cpp` stubs instead:
+Learning mode uses the empty skeletons in the root `algorithm/*_pathfinder.cpp` files:
 
 ```powershell
 cmake -S . -B build -A x64 -DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON
 cmake --build build --config Debug
 ```
 
-For a Release build:
+Build the Release version:
 
 ```powershell
 cmake --build build --config Release
@@ -81,65 +97,50 @@ cmake --build build --config Release
 
 ## Run
 
-With the Visual Studio generator, the Debug executable is usually created at:
+When using a Visual Studio generator, the Debug executable is usually located at:
 
 ```powershell
 .\build\Debug\PathFindingVisualizer.exe
 ```
 
-The Release executable is usually created at:
+The Release executable is usually located at:
 
 ```powershell
 .\build\Release\PathFindingVisualizer.exe
 ```
 
-The app loads fonts, textures, and sounds from `assets/`. The root CMake file copies `assets/` into the build directory during configuration.
+The program loads fonts, textures, and audio resources from `assets/`. The root CMake configuration copies `assets/` into the build directory during configuration.
 
-If Windows cannot find an SDL DLL at launch time, copy these files from `thirdparty/lib/msvc/` next to the executable, or add that directory to your `PATH`:
+If you get a missing SDL DLL error at runtime, you can copy the following files from `thirdparty/lib/msvc/` to the same directory as the executable, or add that directory to `PATH`:
 
 - `SDL2.dll`
 - `SDL2_image.dll`
 - `SDL2_mixer.dll`
 - `SDL2_ttf.dll`
 
-## How To Use
+## Usage
 
-1. Select `Start`, then click a grid cell to place the start tile.
-2. Select `Goal`, then click a grid cell to place the target tile.
-3. Select `Wall` and click or drag on the grid to create blocked cells.
-4. Select `Edit Weight` or use the Dev Options weight brush to paint weighted tiles.
+1. Select `Start`, then click a tile on the board to set the start point.
+2. Select `Goal`, then click a tile on the board to set the goal point.
+3. Select `Wall`, then click or drag on the board to draw obstacles.
+4. Select `Edit Weight`, or use the weight brush in Dev Options to paint weighted tiles.
 5. Select an algorithm.
-6. Click `Next Step` to advance manually, or `Auto Run` to run continuously.
-7. Use `Pause` to stop auto-run, `Prev Step` to undo one search step, `Restart` to clear search progress, or `Reset` to clear the whole board.
+6. Click `Next Step` to advance one step, or click `Auto Run` to run automatically.
+7. Use `Pause` to stop auto-run, `Prev Step` to step back once, `Restart` to clear the search process, and `Reset` to clear the entire board.
 
-Once a search starts, board editing is locked. Click `Restart` or `Reset` before changing tiles, algorithms, movement mode, diagonal policy, or A* heuristic settings.
+Once the search starts, board editing is locked. If you need to change tiles, the algorithm, movement mode, diagonal policy, or the A* heuristic, you must click `Restart` or `Reset` first.
 
-## Dev Options
+## Statistics
 
-Click the small button in the lower-left corner to toggle the Dev Options panel.
+- `Total Steps`: the number of algorithm steps already executed by the controller.
+- `Path Steps`: the number of movement steps in the final path reconstructed from the parent chain.
+- `Total Cost`: the final path total cost, computed by multiplying the configured straight / diagonal movement cost by tile weights along the reconstructed parent chain.
 
-Dev Options lets you:
-
-- Select A*, Dijkstra, BFS, Greedy, or Custom.
-- Change A* heuristic mode: Manhattan, Euclidean, Octile, or Chebyshev.
-- Switch between four-way and eight-way movement.
-- Choose the diagonal corner-cutting policy.
-- Change integer straight/diagonal movement costs.
-- Adjust auto-run speed.
-- Set the weight brush value.
-- Inspect simulation state, play mode, edit lock, found-path state, and mouse position.
-
-## Counters
-
-- `Total Steps`: number of algorithm steps executed by the controller.
-- `Path Steps`: number of moves in the final reconstructed path.
-- `Total Cost`: final reconstructed path cost, using the configured straight/diagonal movement costs multiplied by tile weight.
-
-If no path is found, `Path Steps` and `Total Cost` stay at `0`.
+If no path is found, `Path Steps` and `Total Cost` remain `0`.
 
 ## Algorithm Notes
 
-All pathfinders implement the shared `Pathfinder` interface:
+All pathfinding algorithms implement a shared `Pathfinder` interface:
 
 ```cpp
 class Pathfinder
@@ -150,19 +151,20 @@ public:
 };
 ```
 
-Algorithm classes inherit from `CloneablePathfinder<Derived>`, so clone behavior is automatic. `SimulationController` owns the active pathfinder, advances it one step at a time, saves history, supports previous-step undo, and locks board editing during the search.
+When an algorithm class inherits from `CloneablePathfinder<Derived>`, clone support is generated automatically so that algorithm state snapshots can be saved for rollback. `SimulationController` owns the current algorithm instance and is responsible for step-by-step execution, auto-play, history storage, previous-step rollback support, and locking board editing while the search is running.
 
-Common behavior such as reading endpoints, neighbor lookup, movement cost, heuristic cost, tile marking, closing the current tile, and rebuilding the final path lives in the `Pathfinder` base class.
+Shared logic such as reading the start and goal, gathering neighbors, computing movement cost, computing heuristic cost, marking tiles, closing the current tile, and rebuilding the final path is implemented in the `Pathfinder` base class.
 
-For implementation details, read the algorithm guide:
+For more implementation details, see the algorithm notes:
 
 - [algorithm/README-EN.md](algorithm/README-EN.md)
-- [algorithm/README-CN.md](algorithm/README-CN.md)
 
-## Assets And Third-Party Code
+For more engineering details, architecture notes, and module breakdowns, see the [project page](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html).
 
-- Fonts, textures, and sounds live in `assets/`.
-- Dear ImGui sources live in `imgui/`.
-- SDL2 headers, libraries, DLLs, and optional DLLs live in `thirdparty/`.
+## Resources and Third-Party Code
 
-See `LICENSE.txt` and `imgui/LICENSE.txt` for license information included in this repository.
+- Fonts, textures, and audio resources are located in `assets/`.
+- Dear ImGui source code is located in `imgui/`.
+- SDL2 headers, libraries, and DLLs are located in `thirdparty/`.
+
+See `LICENSE.txt` and `imgui/LICENSE.txt` for license information.

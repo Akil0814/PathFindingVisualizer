@@ -4,6 +4,8 @@
 
 项目结构的目标是让算法学习者只关注搜索逻辑本身，而不用处理 SDL 渲染、按钮事件、播放速度、暂停、重置或回退逻辑。
 
+为了保证单步执行、自动运行、回退以及可视化状态一致，以下状态需要由算法实现正确维护。
+
 ## 源文件选择
 
 `algorithm/CMakeLists.txt` 会在 CMake 配置阶段选择要编译的算法源文件。
@@ -23,8 +25,8 @@ flowchart TD
     B -- "否" --> D{"是否存在 algorithm/impl/*_pathfinder_impl.cpp ?"}
     D -- "是" --> E["编译 impl 中的完整实现"]
     D -- "否" --> C
-    C --> F["学习/实验算法实现"]
-    E --> G["默认完整算法实现"]
+    C --> F["学习/实验实现"]
+    E --> G["默认完整实现"]
 ```
 
 示例：
@@ -45,9 +47,9 @@ cmake --build build --config Debug
 - `*_pathfinder.cpp`：学习模式空框架，在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时编译。
 - `impl/*_pathfinder_impl.cpp`：默认完整实现，在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF` 时编译。
 
-## impl文件夹中已实现算法
+## 默认实现算法
 
-- A*：优先队列按 `f = g + h` 排序，启发函数可在Dev面板中选择。
+- A*：优先队列按 `f = g + h` 排序，启发函数可在 Dev 面板中选择。
 - Dijkstra：优先队列按当前已知最小 `g` 代价排序。
 - BFS：FIFO 队列推进，找到的是最少移动步数路径，不一定是带权总代价最低路径。
 - Greedy Best-First Search：优先队列按启发式距离排序，适合观察搜索方向，但不保证最优路径。
