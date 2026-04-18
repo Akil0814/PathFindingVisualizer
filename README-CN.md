@@ -158,7 +158,6 @@ public:
 
 更多实现细节请阅读算法说明：
 
-- [algorithm/README-EN.md](algorithm/README-EN.md)
 - [algorithm/README-CN.md](algorithm/README-CN.md)
 
 更多工程实现细节、架构设计与模块拆解可参考[项目页面](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html)。

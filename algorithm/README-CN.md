@@ -1,6 +1,6 @@
 # 寻路算法实现指南
 
-这个目录保存 `Pathfinder` 基类、学习用空框架，以及默认算法实现。
+这个目录保存 `Pathfinder` 基类、可用于学习与实验的空框架，以及默认算法实现。
 
 项目结构的目标是让算法学习者只关注搜索逻辑本身，而不用处理 SDL 渲染、按钮事件、播放速度、暂停、重置或回退逻辑。
 
@@ -11,10 +11,10 @@
 - 默认模式：`PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF`
   - 如果 `algorithm/impl/*_pathfinder_impl.cpp` 存在，就编译 impl 中的完整实现。
   - 如果某个算法没有 impl 文件，就回退到根目录下的 `algorithm/*_pathfinder.cpp`。
-  - `CustomPathfinder` 就是这样参与编译的：它故意没有 impl 文件。
-- 学习模式：`PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`
+  - `CustomPathfinder` 没有 impl 文件故会回到根目录编译。
+- 学习/实验模式：`PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON`
   - 编译根目录下的 `algorithm/*_pathfinder.cpp`。
-  - 这些文件是有意保留的空框架，方便你自己实验。
+  - 这些文件只有实现空框架，方便实验与学校。
 
 示例：
 
@@ -23,21 +23,23 @@ cmake -S . -B build -DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF
 cmake --build build --config Debug
 ```
 
+也可以直接去当前目录的Cmake文件将首行改为OFF，编译时则会默认使用根目录中的内容，
+注意：若是执行了这个操作可能会导致build文件有残留状态，需要清理全部的原始构建内容重新编译
+
 ## 文件职责
 
 - `path_finder.h` / `path_finder.cpp`：所有算法共用的基类和 helper。
 - `a_star_pathfinder.h`、`bfs_pathfinder.h`、`dijkstra_pathfinder.h`、`greedy_pathfinder.h`：算法状态和类声明。
-- `custom_pathfinder.h` / `custom_pathfinder.cpp`：故意留空的用户自定义算法。
+- `custom_pathfinder.h` / `custom_pathfinder.cpp`：留空的框架可用于自定义算法。
 - `*_pathfinder.cpp`：学习模式空框架，在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时编译。
 - `impl/*_pathfinder_impl.cpp`：默认完整实现，在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF` 时编译。
 
-## 已实现算法
+## impl文件夹中已实现算法
 
-- A*：优先队列按 `f = g + h` 排序，启发函数可通过 controller/UI 选择。
+- A*：优先队列按 `f = g + h` 排序，启发函数可在Dev面板中选择。
 - Dijkstra：优先队列按当前已知最小 `g` 代价排序。
 - BFS：FIFO 队列推进，找到的是最少移动步数路径，不一定是带权总代价最低路径。
 - Greedy Best-First Search：优先队列按启发式距离排序，适合观察搜索方向，但不保证最优路径。
-- Custom：给用户写自定义算法的空框架，只能从 ImGui Dev Options 面板选择。
 
 ## 算法类接口约定
 
@@ -57,7 +59,7 @@ public:
 
 ## Pathfinder 共用 helper
 
-优先使用这些基类 helper，不用在每个算法里重复写棋盘逻辑：
+优先使用这些基类 helper，而不是在每个算法里重复写棋盘逻辑：
 
 ```cpp
 bool read_endpoints(Point& start, Point& goal) const;
@@ -272,7 +274,7 @@ for (const Point next : neighbors(current))
 
 ### 10. 哪些事情不应该由算法处理
 
-算法实现不要负责这些事情：
+算法实现不用负责这些事情：
 
 - 不要处理 SDL 事件。
 - 不要直接渲染。
