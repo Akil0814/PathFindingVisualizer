@@ -57,7 +57,7 @@ public:
 
 ## Pathfinder 共用 helper
 
-优先使用这些基类 helper，不要在每个算法里重复写棋盘逻辑：
+优先使用这些基类 helper，不用在每个算法里重复写棋盘逻辑：
 
 ```cpp
 bool read_endpoints(Point& start, Point& goal) const;

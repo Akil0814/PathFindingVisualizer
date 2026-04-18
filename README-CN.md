@@ -1,17 +1,15 @@
 # PathFindingVisualizer
 
-`PathFindingVisualizer` 是一个基于 C++17、SDL2 和 Dear ImGui 构建的桌面寻路算法可视化项目。
+`PathFindingVisualizer` 是一个使用 C++17、SDL2 和 Dear ImGui 开发的桌面寻路算法可视化项目。
 
-项目提供一个可交互的 20 x 20 网格，用户可放置起点、终点、墙体以及设置格子权重，然后单步观察算法搜索过程，或者让算法自动运行。
+在 20 x 20 的网格中，你可以放置起点、终点、墙体，设置格子权重，并通过单步执行或自动运行观察算法如何搜索路径。
 
 ## 算法相关
 
 - A*、Dijkstra、BFS、Greedy Best-First Search 的完整默认实现位于 `algorithm/impl/`。
-- `CustomPathfinder` 未提供任何内置实现，可用于你自己实验算法。该算法只能从 ImGui 的 Dev Options 面板中选择启用
+- `CustomPathfinder` 未提供任何内置实现，可用于你自己实验算法。该算法只能从 ImGui 的 Dev Options 面板中选择启用。
 - 根目录下的 `algorithm/*_pathfinder.cpp` 是学习用空框架，只在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时参与编译。
 - 默认构建会使用 `algorithm/impl/` 中提供的算法的完整实现。
-
-
 
 ## 功能
 
@@ -21,31 +19,31 @@
 - 支持设置起点、终点、墙体、以及棋盘格权重。
 - 左侧按钮支持选择 A*、Dijkstra、BFS、Greedy。
 - 支持自动运行、暂停、下一步、上一步、重启搜索和重置棋盘。
-- 当鼠标悬停于某一格子上时会在左上角显示当前格子详细信息
+- 当鼠标悬停于某一格子上时会在左上角显示当前格子详细信息。
 - 显示总搜索步数、最终路径步数和最终路径总代价。
 - Open、Current、Path、Closed 等方向纹理会根据 parent 链指向父级格子。
 
 ### 开发者功能
 
-#### 点击左下角小扳手可呼出imgui调试窗口
+#### 点击左下角小扳手可呼出 ImGui 调试窗口
 
-Dev模式会增加按钮：
-- 支持显示棋盘格权重
+Dev 模式会增加按钮：
+- 支持显示棋盘格权重。
 - 支持编辑棋盘格权重设置。
 - 支持显示每个访问过的棋盘格的代价。
 
-imgui窗口：
-- 支持选择自定义算法
-- 支持不同启发函数的选择
+ImGui 窗口：
+- 支持选择 Custom 自定义算法。
+- 支持选择 A* 启发函数。
 - 支持四方向和八方向移动的选择。
 - 八方向移动时支持三种斜角策略：
   - `Strict No Corner Cutting`：只要两个侧边格子中有一个是墙，就禁止斜走。
   - `No Corner Cutting`：只有两个侧边格子都是墙时，才禁止斜走。
   - `Allow Corner Cutting`：不检查侧边格子，允许斜角穿过。
-- 可编辑单格权重数值(1-10)
-- 可设置全局单步(直走/斜角)代价，默认直走 `10 * weight`，斜走 `14 * weight`
-- 可设置自动运行速度
-- 可查看全局状态机信息
+- 可编辑单格权重数值（1-10）。
+- 可设置全局单步移动代价（直走/斜走），默认直走 `10 * weight`，斜走 `14 * weight`。
+- 可设置自动运行速度。
+- 可查看全局状态机信息。
 
 ## 项目结构
 
@@ -71,6 +69,10 @@ imgui窗口：
 - CMake 3.12 或更高版本。
 
 仓库已经在 `thirdparty/` 中包含 Windows 构建需要的 SDL2 头文件、导入库和 DLL，因此当前工程不需要额外通过包管理器安装 SDL。
+
+- 已通过 MSVC 与 MinGW 编译测试。
+
+- 非 Windows 构建会通过 pkg-config 查找 SDL2 依赖；macOS 尚未进行编译测试。
 
 ## 构建
 
@@ -129,20 +131,6 @@ Release 可执行文件通常位于：
 
 搜索开始后，棋盘编辑会被锁定。需要修改格子、算法、移动模式、斜角策略或 A* 启发函数时，需先点击 `Restart` 或 `Reset`。
 
-## Dev Options
-
-点击左下角的小按钮可以打开或关闭 Dev Options 面板。
-
-Dev Options 可以：
-
-- 选择 A*、Dijkstra、BFS、Greedy 或 Custom。
-- 修改 A* 启发函数：Manhattan、Euclidean、Octile、Chebyshev。
-- 切换四方向和八方向移动。
-- 选择斜角穿墙策略。
-- 调整自动运行速度。
-- 设置权重画笔数值。
-- 查看模拟状态、播放模式、编辑锁定、是否找到路径和鼠标位置。
-
 ## 统计数字
 
 - `Total Steps`：控制器已经执行的算法步数。
@@ -164,7 +152,7 @@ public:
 };
 ```
 
-算法类继承 `CloneablePathfinder<Derived>` 后，clone 会自动完成。`SimulationController` 持有当前算法实例，负责单步推进、自动播放、保存历史、支持上一步回退，并在搜索期间锁定棋盘编辑。
+算法类继承 `CloneablePathfinder<Derived>` 后，会自动完成 clone 操作，以保存算法状态快照用于回退。`SimulationController` 持有当前算法实例，负责单步推进、自动播放、保存历史、支持上一步回退，并在搜索期间锁定棋盘编辑。
 
 读取起点终点、获取邻居、移动代价、启发式代价、标记格子、关闭当前格子、重建最终路径等公共逻辑都放在 `Pathfinder` 基类中。
 
@@ -177,6 +165,6 @@ public:
 
 - 字体、贴图和音效位于 `assets/`。
 - Dear ImGui 源码位于 `imgui/`。
-- SDL2 头文件、库、DLL 以及可选 DLL 位于 `thirdparty/`。
+- SDL2 头文件、库、DLL 等位于 `thirdparty/`。
 
 许可证信息见 `LICENSE.txt` 和 `imgui/LICENSE.txt`。
