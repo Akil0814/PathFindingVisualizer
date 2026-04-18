@@ -2,4 +2,10 @@
 
 void CustomPathfinder::next_step()
 {
+
+}
+
+void CustomPathfinder::initialize()
+{
+
 }

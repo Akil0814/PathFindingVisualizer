@@ -2,4 +2,10 @@
 
 void DijkstraPathfinder::next_step()
 {
+
+}
+
+void DijkstraPathfinder::initialize()
+{
+
 }

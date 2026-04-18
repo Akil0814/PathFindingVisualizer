@@ -6,4 +6,7 @@ class CustomPathfinder final : public CloneablePathfinder<CustomPathfinder>
 {
 public:
     void next_step() override;
+
+private:
+    void initialize();
 };

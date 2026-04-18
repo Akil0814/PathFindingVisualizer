@@ -589,7 +589,7 @@ SDL_Texture* Board::get_directed_tile_texture(Tile::Status status, bool diagonal
 
 void Board::draw_tile_info_panel(SDL_Renderer* renderer)
 {
-    const SDL_Rect panel_rect = { 12, 6, 186, 152 };
+    const SDL_Rect panel_rect = { 12, 6, 180, 145 };
     SDL_SetRenderDrawColor(renderer, 205, 205, 205, 255);
     SDL_RenderFillRect(renderer, &panel_rect);
 
@@ -620,10 +620,11 @@ void Board::draw_tile_info_panel(SDL_Renderer* renderer)
     render_info_number(tile._f_cost, { 56, 68, 64, 18 });
     render_info_number(tile._weight, { 94, 88, 36, 18 });
     render_info_label(renderer, DisplayString::tile_status(tile.get_status()), { 85, 110 });
-    render_info_label(renderer, "X:", { 85, 130 });
-    render_info_number(tile._parent.x, { 104, 128, 28, 18 });
-    render_info_label(renderer, "Y:", { 136, 130 });
-    render_info_number(tile._parent.y, { 154, 128, 28, 18 });
+
+    render_info_label(renderer, "X:", { 90, 130 });
+    render_info_number(tile._parent.x, { 110, 129, 28, 18 });
+    render_info_label(renderer, "Y:", { 140, 130 });
+    render_info_number(tile._parent.y, { 158, 129, 28, 18 });
 }
 
 void Board::render_info_label(SDL_Renderer* renderer, const char* text, SDL_Point pos)

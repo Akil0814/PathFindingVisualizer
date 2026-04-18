@@ -2,4 +2,10 @@
 
 void GreedyPathfinder::next_step()
 {
+
+}
+
+void GreedyPathfinder::initialize()
+{
+
 }

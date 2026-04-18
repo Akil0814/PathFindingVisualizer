@@ -1,4 +1,4 @@
-## English
+# Algorithm Implementation Guide
 
 This directory contains the shared pathfinder interface and concrete algorithm implementations. The architecture is designed so algorithm learners can focus on search logic instead of SDL rendering, button events, playback speed, pause, or undo behavior.
 

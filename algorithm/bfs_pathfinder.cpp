@@ -3,3 +3,8 @@
 void BFSPathfinder::next_step()
 {
 }
+
+void BFSPathfinder::initialize()
+{
+
+}

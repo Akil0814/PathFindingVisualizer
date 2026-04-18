@@ -143,6 +143,7 @@ Application::Application()
 	init_assert(!TTF_Init(), u8"SDL_ttf Error");
 	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	_window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _width, _height, SDL_WINDOW_SHOWN);
 	init_assert(_window, u8"SDL_CreateWindow Error");
@@ -541,7 +542,7 @@ void Application::render_status_titles()
 	};
 
 	render_title(std::string("Edit mode: ") + DisplayString::edit_mode(_current_input), { 900, 20 });
-	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 220 });
+	render_title(std::string("Alg using: ") + DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStart), { 20, 235 });
 
 	render_title("Control", { 900, 180 });
 	render_title("Reset", { 900, 460 });
@@ -562,18 +563,20 @@ void Application::render_status_titles()
 	const int total_steps = _controller != nullptr ? _controller->total_steps() : 0;
 	const int path_steps = _controller != nullptr ? _controller->path_steps() : 0;
 	const int total_cost = _controller != nullptr ? _controller->total_cost() : 0;
-	render_title("Total Steps:", { 20, 160 });//一共走了多少格子
-	render_title("Path Steps:", { 20, 180 });//找到的路径一共走了多少步
-	render_title("Total Cost:", { 20, 200 });//这条路径的总花费
+
+	render_title("Total Steps:", { 20, 165 });//一共走了多少格子
+	render_title("Path Steps:", { 20, 185 });//找到的路径一共走了多少步
+	render_title("Total Cost:", { 20, 205 });//这条路径的总花费
+
 	if (_number_renderer != nullptr)
 	{
-		_number_renderer->render_number(total_steps, { 150, 158, 42, 18 });
-		_number_renderer->render_number(path_steps, { 140, 178, 52, 18 });
-		_number_renderer->render_number(total_cost, { 140, 198, 52, 18 });
+		_number_renderer->render_number(total_steps, { 150, 163, 42, 18 });
+		_number_renderer->render_number(path_steps, { 140, 183, 52, 18 });
+		_number_renderer->render_number(total_cost, { 140, 203, 52, 18 });
 	}
 
 	if(_is_dev_mod)
-		render_title("Advance", { 20,474 });
+		render_title("Advance:", { 20,494 });
 }
 
 void Application::init_button()
@@ -630,7 +633,7 @@ void Application::init_button()
 		_current_input = InPutType::Empty;
 		});
 
-	rect_button = { 20,240,150,50 };
+	rect_button = { 20,250,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
@@ -640,7 +643,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::AStart);
 		});
 
-	rect_button = { 20,300,150,50 };
+	rect_button = { 20,310,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
@@ -650,7 +653,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::Dijkstar);
 		});
 
-	rect_button = { 20,360,150,50 };
+	rect_button = { 20,370,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
@@ -660,7 +663,7 @@ void Application::init_button()
 		_controller->set_algorithm(Algorithm::BFS);
 		});
 
-	rect_button = { 20,420,150,50 };
+	rect_button = { 20,430,150,50 };
 	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
@@ -753,7 +756,7 @@ void Application::init_button()
 		});
 
 
-	rect_button = { 20,678,22,22 };
+	rect_button = { 16,685,22,22 };
 
 	if (_dev_button_texture == nullptr)
 		_dev_button_texture = load_texture(_renderer, "assets/texture/dev_button.png");
@@ -763,7 +766,7 @@ void Application::init_button()
 		tmp = _button_manager->add_button(Button(
 			_renderer,
 			rect_button,
-			{ 21,679,20,20 },
+			{ 17,686,20,20 },
 			_dev_button_texture,
 			nullptr,nullptr));
 	}
@@ -776,7 +779,7 @@ void Application::init_button()
 		_is_dev_mod = !_is_dev_mod;
 		});
 
-	rect_button = { 20,490,150,50 };
+	rect_button = { 20,510,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Show Cost", true));
 	tmp->set_on_click([this] {
@@ -784,7 +787,7 @@ void Application::init_button()
 		});
 
 
-	rect_button = { 20,550,150,50 };
+	rect_button = { 20,570,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Edit Weight", true));
 	tmp->set_on_click([this] {
@@ -794,7 +797,7 @@ void Application::init_button()
 		_current_input = InPutType::Weight;
 		});
 
-	rect_button = { 20,610,150,50 };
+	rect_button = { 20,630,150,50 };
 	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
 	set_button_label(tmp, rect_button, make_text("Weight Graph", true));
 	tmp->set_on_click([this] {

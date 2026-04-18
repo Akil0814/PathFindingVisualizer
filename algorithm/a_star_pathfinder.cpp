@@ -2,4 +2,10 @@
 
 void AStarPathfinder::next_step()
 {
+
+}
+
+void AStarPathfinder::initialize()
+{
+
 }
