@@ -6,11 +6,15 @@
 #include "../algorithm/dijkstra_pathfinder.h"
 #include "../algorithm/greedy_pathfinder.h"
 
+#include <algorithm>
 #include <utility>
 
 SimulationController::SimulationController(Board* board)
     : _board(board)
 {
+    if (_board != nullptr)
+        _board->set_movement_cost_config(_movement_cost_config);
+
     create_path_finder();
 }
 
@@ -22,7 +26,10 @@ void SimulationController::bind_board(Board* board)
         _path_finder->bind_board(_board);
 
     if (_board != nullptr)
+    {
         _board->set_edit_locked(_board_edit_locked);
+        _board->set_movement_cost_config(_movement_cost_config);
+    }
 }
 
 void SimulationController::on_update(double delta)
@@ -245,6 +252,21 @@ void SimulationController::set_diagonal_policy(DiagonalMovePolicy policy)
         _path_finder->set_diagonal_policy(_diagonal_policy);
 }
 
+void SimulationController::set_movement_cost_config(MovementCostConfig config)
+{
+    if (_board_edit_locked)
+        return;
+
+    config.straight = std::max(1, config.straight);
+    config.diagonal = std::max(1, config.diagonal);
+    _movement_cost_config = config;
+
+    if (_board != nullptr)
+        _board->set_movement_cost_config(_movement_cost_config);
+
+    create_path_finder();
+}
+
 void SimulationController::set_a_star_heuristic(HeuristicMode heuristic_mode)
 {
     if (_board_edit_locked)
@@ -264,6 +286,11 @@ MoveMode SimulationController::move_mode() const
 DiagonalMovePolicy SimulationController::diagonal_policy() const
 {
     return _diagonal_policy;
+}
+
+MovementCostConfig SimulationController::movement_cost_config() const
+{
+    return _movement_cost_config;
 }
 
 HeuristicMode SimulationController::a_star_heuristic() const

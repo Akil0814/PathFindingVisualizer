@@ -40,9 +40,11 @@ public:
 	bool undo();
 
 	void set_weight(int weight);
+	void set_movement_cost_config(MovementCostConfig config);
 
 	[[nodiscard]] Point get_start_point() const;
 	[[nodiscard]] Point get_end_point() const;
+	[[nodiscard]] MovementCostConfig movement_cost_config() const;
 
 	[[nodiscard]] int row_count() const;
 	[[nodiscard]] int col_count() const;
@@ -50,6 +52,7 @@ public:
 	Tile& tile_at(Point index);
 	const Tile& tile_at(Point index) const;
 	[[nodiscard]] std::vector<Point> neighbors(Point index, MoveMode move_mode, DiagonalMovePolicy policy) const;
+	[[nodiscard]] int movement_cost(Point from, Point to, int weight) const;
 	[[nodiscard]] int path_cost() const;
 	[[nodiscard]] int path_steps() const;
 
@@ -99,6 +102,7 @@ private:
 	bool _edit_locked = false;
 
 	int _input_weight = 1;
+	MovementCostConfig _movement_cost_config;
 
 	int _index_x = -1;
 	int _index_y = -1;

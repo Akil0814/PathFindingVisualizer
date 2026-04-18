@@ -198,7 +198,17 @@ set_tile_costs(next, next_g_cost, next_h_cost);
 const int next_g_cost = current_tile._g_cost + movement_cost(current, next);
 ```
 
-当前代价规则：
+移动代价由 `MovementCostConfig` 控制：
+
+```cpp
+struct MovementCostConfig
+{
+    int straight = 10;
+    int diagonal = 14;
+};
+```
+
+当前默认代价规则：
 
 - 直走：`10 * tile_weight(destination)`。
 - 斜走：`14 * tile_weight(destination)`。
@@ -233,14 +243,14 @@ for (const Point next : neighbors(current))
 
 ### 8. 启发函数
 
-`Pathfinder::heuristic_cost(...)` 使用和移动代价一致的 10/14 尺度：
+`Pathfinder::heuristic_cost(...)` 使用当前配置的移动代价尺度：
 
-- Manhattan：`10 * (dx + dy)`。
-- Euclidean：`round(10 * sqrt(dx*dx + dy*dy))`。
-- Octile：`14 * min(dx, dy) + 10 * (max(dx, dy) - min(dx, dy))`。
-- Chebyshev：`10 * max(dx, dy)`。
+- Manhattan：`straight * (dx + dy)`。
+- Euclidean：`round(straight * sqrt(dx*dx + dy*dy))`。
+- Octile：`effective_diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`。
+- Chebyshev：`straight * max(dx, dy)`。
 
-对于八方向 A*，Octile 通常最贴合当前的 10/14 移动模型。
+`effective_diagonal` 最多会取到 `2 * straight`，这样在用户实验奇怪数值时启发函数更安全。对于八方向 A*，Octile 通常最贴合默认的 10/14 移动模型。
 
 ### 9. 上一步回退所需状态
 

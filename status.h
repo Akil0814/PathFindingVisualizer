@@ -53,3 +53,9 @@ enum class DiagonalMovePolicy
 	IgnoreSideBlocks
 };
 
+struct MovementCostConfig
+{
+	int straight = 10;
+	int diagonal = 14;
+};
+

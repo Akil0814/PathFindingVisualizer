@@ -113,10 +113,10 @@ namespace DisplayString
 	{
 		switch (heuristic_mode)
 		{
-		case HeuristicMode::Manhattan: return "h = abs(dx) + abs(dy)";
-		case HeuristicMode::Euclidean: return "h = sqrt(dx*dx + dy*dy)";
-		case HeuristicMode::Octile: return "h = max(dx, dy) + (sqrt(2)-1)*min(dx, dy)";
-		case HeuristicMode::Chebyshev: return "h = max(abs(dx), abs(dy))";
+		case HeuristicMode::Manhattan: return "h = straight * (abs(dx) + abs(dy))";
+		case HeuristicMode::Euclidean: return "h = round(straight * sqrt(dx*dx + dy*dy))";
+		case HeuristicMode::Octile: return "h = effective diagonal * min(dx, dy) + straight * remaining";
+		case HeuristicMode::Chebyshev: return "h = straight * max(abs(dx), abs(dy))";
 
 		default: return "Unknown";
 		}

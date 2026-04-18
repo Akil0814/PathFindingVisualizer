@@ -25,7 +25,7 @@ The app provides an interactive 20 x 20 grid where you can place a start tile, a
   - `No Corner Cutting`: block a diagonal only if both side tiles are blocked.
   - `Allow Corner Cutting`: ignore side tiles for diagonal movement.
 - Weighted tiles from 1 to 10.
-- Movement cost uses `10 * weight` for straight moves and `14 * weight` for diagonal moves.
+- Movement cost is configurable from Dev Options. The default is `10 * weight` for straight moves and `14 * weight` for diagonal moves.
 - Counters for total search steps, final path steps, and final path cost.
 - Directional open/current/path/closed textures use parent links to point toward the previous tile.
 - Dev Options panel supports algorithm selection, A* heuristic selection, movement mode, diagonal policy, auto-run speed, weight brush, state inspection, and mouse/tile debugging.
@@ -124,6 +124,7 @@ Dev Options lets you:
 - Change A* heuristic mode: Manhattan, Euclidean, Octile, or Chebyshev.
 - Switch between four-way and eight-way movement.
 - Choose the diagonal corner-cutting policy.
+- Change integer straight/diagonal movement costs.
 - Adjust auto-run speed.
 - Set the weight brush value.
 - Inspect simulation state, play mode, edit lock, found-path state, and mouse position.
@@ -132,7 +133,7 @@ Dev Options lets you:
 
 - `Total Steps`: number of algorithm steps executed by the controller.
 - `Path Steps`: number of moves in the final reconstructed path.
-- `Total Cost`: final reconstructed path cost, using `10 * weight` for straight moves and `14 * weight` for diagonal moves.
+- `Total Cost`: final reconstructed path cost, using the configured straight/diagonal movement costs multiplied by tile weight.
 
 If no path is found, `Path Steps` and `Total Cost` stay at `0`.
 

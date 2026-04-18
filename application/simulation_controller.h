@@ -35,9 +35,11 @@ public:
     void set_algorithm(Algorithm alg);
     void set_move_mode(MoveMode move_mode);
     void set_diagonal_policy(DiagonalMovePolicy policy);
+    void set_movement_cost_config(MovementCostConfig config);
     void set_a_star_heuristic(HeuristicMode heuristic_mode);
     [[nodiscard]] MoveMode move_mode() const;
     [[nodiscard]] DiagonalMovePolicy diagonal_policy() const;
+    [[nodiscard]] MovementCostConfig movement_cost_config() const;
     [[nodiscard]] HeuristicMode a_star_heuristic() const;
 
 
@@ -61,6 +63,7 @@ private:
     Algorithm _alg_using = Algorithm::AStar;
     MoveMode _move_mode = MoveMode::FourWay;
     DiagonalMovePolicy _diagonal_policy = DiagonalMovePolicy::BlockIfEitherSideBlocked;
+    MovementCostConfig _movement_cost_config;
     HeuristicMode _a_star_heuristic = HeuristicMode::Manhattan;
 
     Board* _board = nullptr;

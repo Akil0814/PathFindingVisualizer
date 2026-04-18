@@ -52,33 +52,39 @@ int Pathfinder::tile_weight(Point point) const
 
 int Pathfinder::movement_cost(Point from, Point to) const
 {
-    const int dx = std::abs(from.x - to.x);
-    const int dy = std::abs(from.y - to.y);
-    const bool diagonal = dx != 0 && dy != 0;
-    const int base_cost = diagonal ? 14 : 10;
+    Board* current_board = board();
+    if (current_board == nullptr)
+        return 0;
 
-    return base_cost * tile_weight(to);
+    return current_board->movement_cost(from, to, tile_weight(to));
 }
 
 int Pathfinder::heuristic_cost(Point from, Point to, HeuristicMode mode) const
 {
-    // Heuristics use the same 10/14 scale as movement cost.
+    // Heuristics use the same configurable scale as movement cost.
+    MovementCostConfig config;
+    if (Board* current_board = board())
+        config = current_board->movement_cost_config();
+
     const int dx = std::abs(from.x - to.x);
     const int dy = std::abs(from.y - to.y);
+    const int min_delta = std::min(dx, dy);
+    const int max_delta = std::max(dx, dy);
+    const int diagonal_cost = std::min(config.diagonal, config.straight * 2);
 
     switch (mode)
     {
     case HeuristicMode::Manhattan:
-        return 10 * (dx + dy);
+        return config.straight * (dx + dy);
 
     case HeuristicMode::Euclidean:
-        return static_cast<int>(std::round(10.0 * std::sqrt(dx * dx + dy * dy)));
+        return static_cast<int>(std::round(config.straight * std::sqrt(dx * dx + dy * dy)));
 
     case HeuristicMode::Octile:
-        return 14 * std::min(dx, dy) + 10 * (std::max(dx, dy) - std::min(dx, dy));
+        return diagonal_cost * min_delta + config.straight * (max_delta - min_delta);
 
     case HeuristicMode::Chebyshev:
-        return 10 * std::max(dx, dy);
+        return config.straight * max_delta;
 
     default:
         return 0;

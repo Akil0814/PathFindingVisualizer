@@ -198,7 +198,17 @@ Movement cost is centralized:
 const int next_g_cost = current_tile._g_cost + movement_cost(current, next);
 ```
 
-Current cost scale:
+Movement cost is controlled by `MovementCostConfig`:
+
+```cpp
+struct MovementCostConfig
+{
+    int straight = 10;
+    int diagonal = 14;
+};
+```
+
+Current default cost scale:
 
 - Straight move: `10 * tile_weight(destination)`.
 - Diagonal move: `14 * tile_weight(destination)`.
@@ -233,14 +243,14 @@ The algorithm still needs to handle its own visited, closed, or better-path chec
 
 ### 8. Heuristics
 
-`Pathfinder::heuristic_cost(...)` uses the same 10/14 scale as movement cost:
+`Pathfinder::heuristic_cost(...)` uses the configured movement-cost scale:
 
-- Manhattan: `10 * (dx + dy)`.
-- Euclidean: `round(10 * sqrt(dx*dx + dy*dy))`.
-- Octile: `14 * min(dx, dy) + 10 * (max(dx, dy) - min(dx, dy))`.
-- Chebyshev: `10 * max(dx, dy)`.
+- Manhattan: `straight * (dx + dy)`.
+- Euclidean: `round(straight * sqrt(dx*dx + dy*dy))`.
+- Octile: `effective_diagonal * min(dx, dy) + straight * (max(dx, dy) - min(dx, dy))`.
+- Chebyshev: `straight * max(dx, dy)`.
 
-For eight-way A*, Octile is usually the best match for the current 10/14 movement model.
+`effective_diagonal` is clamped to at most `2 * straight` for heuristic safety when users experiment with unusual values. For eight-way A*, Octile is usually the best match for the default 10/14 movement model.
 
 ### 9. State required for previous-step undo
 

@@ -1,34 +1,51 @@
 # PathFindingVisualizer
 
-`PathFindingVisualizer` 是一个使用 C++17、SDL2 和 Dear ImGui 构建的桌面寻路算法可视化项目。
+`PathFindingVisualizer` 是一个基于 C++17、SDL2 和 Dear ImGui 构建的桌面寻路算法可视化项目。
 
-项目提供一个可交互的 20 x 20 网格。你可以放置起点、终点、墙体和权重格子，然后单步观察算法搜索过程，或者让算法自动运行。
+项目提供一个可交互的 20 x 20 网格，用户可放置起点、终点、墙体以及设置格子权重，然后单步观察算法搜索过程，或者让算法自动运行。
 
-## 当前状态
+## 算法相关
 
 - A*、Dijkstra、BFS、Greedy Best-First Search 的完整默认实现位于 `algorithm/impl/`。
-- `CustomPathfinder` 故意不提供内置实现，用于你自己实验算法。它只能从 ImGui 的 Dev Options 面板中选择。
+- `CustomPathfinder` 未提供任何内置实现，可用于你自己实验算法。该算法只能从 ImGui 的 Dev Options 面板中选择启用
 - 根目录下的 `algorithm/*_pathfinder.cpp` 是学习用空框架，只在 `PATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=ON` 时参与编译。
-- 默认构建会使用 `algorithm/impl/` 中的完整实现。
+- 默认构建会使用 `algorithm/impl/` 中提供的算法的完整实现。
+
+
 
 ## 功能
 
+### 默认支持
+
 - 20 x 20 可视化网格棋盘。
-- 支持设置起点、终点、墙体、擦除格子和权重格子。
+- 支持设置起点、终点、墙体、以及棋盘格权重。
 - 左侧按钮支持选择 A*、Dijkstra、BFS、Greedy。
-- ImGui Dev Options 面板支持选择 Custom 算法。
 - 支持自动运行、暂停、下一步、上一步、重启搜索和重置棋盘。
-- 搜索运行期间会锁定棋盘编辑，避免算法状态被破坏。
-- 支持四方向和八方向移动。
+- 当鼠标悬停于某一格子上时会在左上角显示当前格子详细信息
+- 显示总搜索步数、最终路径步数和最终路径总代价。
+- Open、Current、Path、Closed 等方向纹理会根据 parent 链指向父级格子。
+
+### 开发者功能
+
+#### 点击左下角小扳手可呼出imgui调试窗口
+
+Dev模式会增加按钮：
+- 支持显示棋盘格权重
+- 支持编辑棋盘格权重设置。
+- 支持显示每个访问过的棋盘格的代价。
+
+imgui窗口：
+- 支持选择自定义算法
+- 支持不同启发函数的选择
+- 支持四方向和八方向移动的选择。
 - 八方向移动时支持三种斜角策略：
   - `Strict No Corner Cutting`：只要两个侧边格子中有一个是墙，就禁止斜走。
   - `No Corner Cutting`：只有两个侧边格子都是墙时，才禁止斜走。
   - `Allow Corner Cutting`：不检查侧边格子，允许斜角穿过。
-- 支持 1 到 10 的格子权重。
-- 移动代价为：直走 `10 * weight`，斜走 `14 * weight`。
-- 显示总搜索步数、最终路径步数和最终路径总代价。
-- Open、Current、Path、Closed 等方向纹理会根据 parent 链指向父级格子。
-- Dev Options 面板支持算法选择、A* 启发函数选择、移动模式、斜角策略、自动运行速度、权重画笔、状态查看和鼠标/格子调试信息。
+- 可编辑单格权重数值(1-10)
+- 可设置全局单步(直走/斜角)代价，默认直走 `10 * weight`，斜走 `14 * weight`
+- 可设置自动运行速度
+- 可查看全局状态机信息
 
 ## 项目结构
 
@@ -37,7 +54,7 @@
 |-- main.cpp                         # 程序入口
 |-- CMakeLists.txt                   # 根 CMake 配置
 |-- status.h                         # 输入、算法、状态、移动模式、启发函数等共享枚举
-|-- appliction/                      # 应用主循环和模拟控制器
+|-- application/                      # 应用主循环和模拟控制器
 |-- Aframework/                      # 棋盘、格子、按钮、文字纹理和 UI 基础组件
 |-- algorithm/                       # Pathfinder 基类、学习空框架和算法说明
 |-- algorithm/impl/                  # 默认完整算法实现
@@ -46,8 +63,6 @@
 |-- thirdparty/                      # SDL2 头文件、导入库和 DLL
 `-- utils/                           # 通用显示字符串工具
 ```
-
-注意：当前目录名是 `appliction`。CMake 和源码 include 都使用了这个拼写，除非同步修改所有引用，否则不要单独改名。
 
 ## 环境要求
 
@@ -112,7 +127,7 @@ Release 可执行文件通常位于：
 6. 点击 `Next Step` 单步推进，或者点击 `Auto Run` 自动运行。
 7. 使用 `Pause` 暂停自动运行，`Prev Step` 回退一步，`Restart` 清除搜索过程，`Reset` 清空整个棋盘。
 
-搜索开始后，棋盘编辑会被锁定。需要修改格子、算法、移动模式、斜角策略或 A* 启发函数时，请先点击 `Restart` 或 `Reset`。
+搜索开始后，棋盘编辑会被锁定。需要修改格子、算法、移动模式、斜角策略或 A* 启发函数时，需先点击 `Restart` 或 `Reset`。
 
 ## Dev Options
 
@@ -132,7 +147,7 @@ Dev Options 可以：
 
 - `Total Steps`：控制器已经执行的算法步数。
 - `Path Steps`：最终 parent 链路径包含的移动步数。
-- `Total Cost`：最终 parent 链路径总代价，直走按 `10 * weight` 计算，斜走按 `14 * weight` 计算。
+- `Total Cost`：最终 parent 链路径总代价，使用当前配置的直走/斜走移动代价乘以格子权重。
 
 如果没有找到路径，`Path Steps` 和 `Total Cost` 会保持为 `0`。
 

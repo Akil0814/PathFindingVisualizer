@@ -47,15 +47,6 @@ namespace
         return 0;
     }
 
-    int movement_cost(Point from, Point to, int weight)
-    {
-        const int dx = std::abs(from.x - to.x);
-        const int dy = std::abs(from.y - to.y);
-        const bool diagonal = dx != 0 && dy != 0;
-        const int base_cost = diagonal ? 14 : 10;
-
-        return base_cost * weight;
-    }
 }
 
 Board::Board()
@@ -417,6 +408,16 @@ std::vector<Point> Board::neighbors(Point index, MoveMode move_mode, DiagonalMov
     }
 
     return result;
+}
+
+int Board::movement_cost(Point from, Point to, int weight) const
+{
+    const int dx = std::abs(from.x - to.x);
+    const int dy = std::abs(from.y - to.y);
+    const bool diagonal = dx != 0 && dy != 0;
+    const int base_cost = diagonal ? _movement_cost_config.diagonal : _movement_cost_config.straight;
+
+    return base_cost * weight;
 }
 
 int Board::path_cost() const
@@ -855,6 +856,13 @@ void Board::set_weight(int weight)
     _input_weight = weight;
 }
 
+void Board::set_movement_cost_config(MovementCostConfig config)
+{
+    config.straight = std::max(1, config.straight);
+    config.diagonal = std::max(1, config.diagonal);
+    _movement_cost_config = config;
+}
+
 Point Board::get_start_point() const
 {
     return _start_pos_index;
@@ -863,4 +871,9 @@ Point Board::get_start_point() const
 Point Board::get_end_point() const
 {
     return _end_pos_index;
+}
+
+MovementCostConfig Board::movement_cost_config() const
+{
+    return _movement_cost_config;
 }

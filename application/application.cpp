@@ -515,6 +515,22 @@ void Application::render_imgui()
 		}
 		ImGui::TextWrapped("Applies when Move mode is Eight Way.");
 
+		MovementCostConfig movement_cost = _controller != nullptr ? _controller->movement_cost_config() : MovementCostConfig{};
+		bool movement_cost_changed = false;
+		movement_cost_changed |= ImGui::InputInt("Straight cost", &movement_cost.straight, 1, 10);
+		movement_cost_changed |= ImGui::InputInt("Diagonal cost", &movement_cost.diagonal, 1, 10);
+		if (movement_cost_changed)
+		{
+			if (validate_unlocked_operation("Reset or Restart before changing movement costs."))
+			{
+				if (_controller != nullptr)
+					_controller->set_movement_cost_config(movement_cost);
+			}
+		}
+		if (_controller != nullptr)
+			movement_cost = _controller->movement_cost_config();
+		ImGui::TextWrapped("Costs are integers. Tile weight multiplies the selected straight or diagonal cost.");
+
 		ImGui::Spacing();
 		ImGui::Text("Auto Run Options");
 		ImGui::Separator();
@@ -535,6 +551,7 @@ void Application::render_imgui()
 		ImGui::Text("Algorithm: %s", DisplayString::algorithm(_controller != nullptr ? _controller->algorithm() : Algorithm::AStar));
 		ImGui::Text("Move mode: %s", DisplayString::move_mode(_controller != nullptr ? _controller->move_mode() : MoveMode::FourWay));
 		ImGui::Text("Diagonal policy: %s", DisplayString::diagonal_move_policy(_controller != nullptr ? _controller->diagonal_policy() : DiagonalMovePolicy::BlockIfEitherSideBlocked));
+		ImGui::Text("Movement costs: %d / %d", movement_cost.straight, movement_cost.diagonal);
 		if (_controller != nullptr)
 		{
 			ImGui::Text("Sim state: %s", DisplayString::sim_state(_controller->sim_state()));
