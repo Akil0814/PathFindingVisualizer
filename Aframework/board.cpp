@@ -216,16 +216,16 @@ void Board::on_render(SDL_Renderer* renderer)
 
                 SDL_Color color = { 0, 0, 0, 255 };
 
-                if (w <= 1)       color = { 116, 174, 98, 255 };
-                else if (w == 2)  color = { 139, 184, 91, 255 };
-                else if (w == 3)  color = { 164, 190, 82, 255 };
+                if (w <= 1)       color = { 72, 120, 68, 255 };
+                else if (w == 2)  color = { 98, 148, 76, 255 };
+                else if (w == 3)  color = { 132, 166, 80, 255 };
                 else if (w == 4)  color = { 191, 190, 73, 255 };
                 else if (w == 5)  color = { 211, 178, 65, 255 };
-                else if (w == 6)  color = { 224, 157, 58, 255 };
-                else if (w == 7)  color = { 220, 128, 56, 255 };
-                else if (w == 8)  color = { 211, 98, 58, 255 };
-                else if (w == 9)  color = { 196, 70, 64, 255 };
-                else              color = { 176, 50, 58, 255 };
+                else if (w == 6)  color = { 205, 140, 58, 255 };
+                else if (w == 7)  color = { 178, 96, 54, 255 };
+                else if (w == 8)  color = { 150, 68, 52, 255 };
+                else if (w == 9)  color = { 122, 48, 48, 255 };
+                else              color = { 80, 22, 30, 255 };
 
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
                 SDL_RenderFillRect(renderer, &rect);
