@@ -198,6 +198,12 @@ void Button::set_message_texture(SDL_Texture* new_texture_message)
     texture_message = new_texture_message;
 }
 
+void Button::set_sound_effects(Mix_Chunk* sound_down, Mix_Chunk* sound_up)
+{
+    sound_effect_down = sound_down;
+    sound_effect_up = sound_up;
+}
+
 void Button::set_enabled(bool new_enabled)
 {
     enabled = new_enabled;
@@ -222,5 +228,4 @@ void Button::reset_click_count()
 {
     time_on_click = 0;
 }
-
 

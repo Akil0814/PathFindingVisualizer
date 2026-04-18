@@ -53,6 +53,8 @@ public:
     void set_message_rect(SDL_Rect new_rect_message);
     // Set or replace the optional message texture rendered on top of the button.
     void set_message_texture(SDL_Texture* new_texture_message);
+    // Set or replace optional press/release sound effects. Resources are non-owning.
+    void set_sound_effects(Mix_Chunk* sound_down, Mix_Chunk* sound_up);
     // Enable or disable interaction; disabling resets press state to idle.
     void set_enabled(bool enabled);
     // Return whether the button is currently enabled for input handling.

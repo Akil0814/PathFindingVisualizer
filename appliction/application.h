@@ -76,6 +76,8 @@ private:
 	SDL_Window* _window = nullptr;
 	SDL_Renderer* _renderer = nullptr;
 	SDL_Texture* _dev_button_texture = nullptr;
+	Mix_Chunk* _button_sound_down = nullptr;
+	Mix_Chunk* _button_sound_up = nullptr;
 	TTF_Font* _button_font = nullptr;
 	TTF_Font* _title_font = nullptr;
 

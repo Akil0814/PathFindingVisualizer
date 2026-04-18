@@ -2,19 +2,19 @@
 
 [English](README-EN.md) / [中文](README-CN.md)
 
-A lightweight C++17 path-finding visualizer built with SDL2 and Dear ImGui.
+`PathFindingVisualizer` is a C++17 desktop path-finding visualizer built with SDL2 and Dear ImGui.
 
-一个使用 C++17、SDL2 和 Dear ImGui 构建的轻量级寻路可视化项目。
+`PathFindingVisualizer` 是一个使用 C++17、SDL2 和 Dear ImGui 构建的桌面寻路算法可视化项目。
 
 ## Quick Links / 快速链接
 
-- More implementation details are available on the project website. [Project Details](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html)
-- 关于此项目的更多实现细节可参考网站 [项目详细](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html)
+- Project details: [PathFindingVisualizer](https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html)
+- Algorithm implementation guide: [English](algorithm/README-EN.md) / [中文](algorithm/README-CN.md)
 
 ## Build / 构建
 
 ```powershell
-cmake -S . -B build -A x64
+cmake -S . -B build -A x64 -DPATHFINDER_USE_CUSTOM_IMPLEMENTATIONS=OFF
 cmake --build build --config Debug
 ```
 
@@ -24,6 +24,6 @@ cmake --build build --config Debug
 .\build\Debug\PathFindingVisualizer.exe
 ```
 
-For full usage, build notes, and implementation details, open the language-specific README above. 
+For full usage, build options, and implementation notes, open the language-specific README above.
 
-完整使用方式、构建说明和实现细节请查看上方对应语言的 README。
+完整使用方式、构建选项和实现说明请查看上方对应语言的 README。

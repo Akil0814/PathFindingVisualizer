@@ -183,6 +183,18 @@ void Application::shutdown()
 		_dev_button_texture = nullptr;
 	}
 
+	if (_button_sound_down != nullptr)
+	{
+		Mix_FreeChunk(_button_sound_down);
+		_button_sound_down = nullptr;
+	}
+
+	if (_button_sound_up != nullptr)
+	{
+		Mix_FreeChunk(_button_sound_up);
+		_button_sound_up = nullptr;
+	}
+
 	if (_button_font != nullptr)
 	{
 		TTF_CloseFont(_button_font);
@@ -390,6 +402,13 @@ void Application::init()
 	init_assert(_button_font != nullptr, TTF_GetError());
 	_title_font = TTF_OpenFont("assets/font/Frick.otf", 16);
 	init_assert(_title_font != nullptr, TTF_GetError());
+	_button_sound_down = Mix_LoadWAV("assets/sound/click_down.wav");
+	if (_button_sound_down == nullptr)
+		SDL_Log("Mix_LoadWAV failed for click_down.wav: %s", Mix_GetError());
+	_button_sound_up = Mix_LoadWAV("assets/sound/click_up.wav");
+	if (_button_sound_up == nullptr)
+		SDL_Log("Mix_LoadWAV failed for click_up.wav: %s", Mix_GetError());
+
 	_board->init(_renderer, _title_font);
 	_number_renderer = std::make_unique<NumberRenderer>(_renderer, _title_font, SDL_Color{ 15, 15, 15, 255 });
 
@@ -590,10 +609,16 @@ void Application::init_button()
 		{
 			return txt_manager.get_txt_texture(_renderer, _button_font, text, is_bold, button_text_color);
 		};
+	auto attach_sound = [&](Button* button) -> Button*
+		{
+			if (button != nullptr)
+				button->set_sound_effects(_button_sound_down, _button_sound_up);
+			return button;
+		};
 
 	//input type
 	SDL_Rect rect_button = { 900,40,70,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_edit_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Start", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
@@ -603,7 +628,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 980,40,70,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_edit_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Goal", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
@@ -613,7 +638,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,100,70,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_edit_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Wall", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
@@ -624,7 +649,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 980,100,70,50 };
-	tmp = _edit_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_edit_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("ERASE", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before editing board."))
@@ -634,7 +659,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,250,150,50 };
-	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_alg_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("A Star", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
@@ -644,7 +669,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,310,150,50 };
-	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_alg_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Dijkstra", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
@@ -654,7 +679,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,370,150,50 };
-	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_alg_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("BFS", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
@@ -664,7 +689,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,430,150,50 };
-	tmp = _alg_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_alg_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Greedy", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before changing algorithm."))
@@ -675,7 +700,7 @@ void Application::init_button()
 
 	//run time
 	rect_button = { 900,200,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Auto Run", true));
 	tmp->set_on_click([this] {
 		if (!validate_path_request())
@@ -686,7 +711,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,260,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	_pause_button_index = _button_manager->size() - 1;
 	tmp->set_enabled(false);
 	set_button_label(tmp, rect_button, make_text("Pause", true));
@@ -698,7 +723,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,320,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Next Step", true));
 	tmp->set_on_click([this] {
 		if (!validate_path_request())
@@ -709,7 +734,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,380,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Prev Step", true));
 	tmp->set_on_click([this] {
 		if (_controller != nullptr && _controller->is_auto_running())
@@ -729,7 +754,7 @@ void Application::init_button()
 
 	//board statse
 	rect_button = { 900,480,150,50 };
-	tmp = _button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Restart", true));
 	tmp->set_on_click([this] {
 		std::cout << "restart " << std::endl;
@@ -737,7 +762,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 900,540,150,50 };
-	tmp = _button_manager->add_button(Button(
+	tmp = attach_sound(_button_manager->add_button(Button(
 		_renderer,
 		rect_button,
 		{},
@@ -747,7 +772,7 @@ void Application::init_button()
 		{ 180, 180, 180, 255 },
 		{ 150, 32, 32, 255 },
 		{ 130, 130, 130, 255 },
-		{ 0, 0, 0, 255 }));
+		{ 0, 0, 0, 255 })));
 	set_button_label(tmp, rect_button, make_text("Reset", true));
 	tmp->set_on_click([this] {
 		std::cout << "reset " << std::endl;
@@ -763,16 +788,16 @@ void Application::init_button()
 
 	if (_dev_button_texture != nullptr)
 	{
-		tmp = _button_manager->add_button(Button(
+		tmp = attach_sound(_button_manager->add_button(Button(
 			_renderer,
 			rect_button,
 			{ 17,686,20,20 },
 			_dev_button_texture,
-			nullptr,nullptr));
+			nullptr,nullptr)));
 	}
 	else
 	{
-		tmp = _button_manager->add_button(Button(_renderer, rect_button));
+		tmp = attach_sound(_button_manager->add_button(Button(_renderer, rect_button)));
 		set_button_label(tmp, rect_button, make_text("Dev", true));
 	}
 	tmp->set_on_click([this] {
@@ -780,7 +805,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,510,150,50 };
-	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_dev_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Show Cost", true));
 	tmp->set_on_click([this] {
 		_board->toggle_show_cost();
@@ -788,7 +813,7 @@ void Application::init_button()
 
 
 	rect_button = { 20,570,150,50 };
-	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_dev_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Edit Weight", true));
 	tmp->set_on_click([this] {
 		if (!validate_unlocked_operation("Reset or Restart before editing weight."))
@@ -798,7 +823,7 @@ void Application::init_button()
 		});
 
 	rect_button = { 20,630,150,50 };
-	tmp = _dev_button_manager->add_button(Button(_renderer, rect_button));
+	tmp = attach_sound(_dev_button_manager->add_button(Button(_renderer, rect_button)));
 	set_button_label(tmp, rect_button, make_text("Weight Graph", true));
 	tmp->set_on_click([this] {
 		_board->toggle_show_weight();

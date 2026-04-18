@@ -86,6 +86,6 @@ void GreedyPathfinder::initialize()
 
 HeuristicMode GreedyPathfinder::default_heuristic_mode() const
 {
-    // Match the heuristic shape to the movement model used by the board.
-    return move_mode() == MoveMode::EightWay ? HeuristicMode::Chebyshev : HeuristicMode::Manhattan;
+    // Match the heuristic shape to the board movement model: Octile uses 10 straight / 14 diagonal.
+    return move_mode() == MoveMode::EightWay ? HeuristicMode::Octile : HeuristicMode::Manhattan;
 }
