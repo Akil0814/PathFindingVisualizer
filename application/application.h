@@ -1,9 +1,13 @@
 #pragma once
-#include<SDL.h>
+
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
 #include <memory>
 #include <cstddef>
+#include <cstdlib>
+#include <string>
 
 #include "../status.h"
 #include "../Aframework/board.h"
@@ -20,9 +24,10 @@ public:
 	int run(int argc, char** argv);
 	
 private:
-
 	void init();
 	void init_button();
+	void tick();
+	static void main_loop_callback(void* user_data);
 
 	void on_render();
 	void on_update(double delta);
@@ -33,13 +38,21 @@ private:
 	void clear_error_on_operation(const SDL_Event& event);
 	bool validate_unlocked_operation(const char* message);
 	bool validate_path_request();
+	bool ensure_audio_ready();
+	void refresh_button_sound_effects();
 	void shutdown();
 
 	void init_assert(bool flag, const char* err_msg)
 	{
 		if (flag)
 			return;
+
+#if defined(__EMSCRIPTEN__)
+		SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Game Start Error: %s (%s)", err_msg, SDL_GetError());
+#else
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, u8"Game Start Error", err_msg, _window);
+#endif
+
 		exit(-1);
 	}
 
@@ -70,6 +83,8 @@ private:
 	int _width = 1080;
 	int _height = 720;
 	double FPS = 60;
+	Uint64 _last_counter = 0;
+	Uint64 _counter_freq = 0;
 
 	SDL_Event _event;
 
@@ -80,6 +95,11 @@ private:
 	Mix_Chunk* _button_sound_up = nullptr;
 	TTF_Font* _button_font = nullptr;
 	TTF_Font* _title_font = nullptr;
+	std::string _click_down_path;
+	std::string _click_up_path;
+	bool _audio_opened = false;
+	bool _audio_assets_loaded = false;
+	bool _audio_failed = false;
 
 	SDL_Color back_ground_color = { 175,175,175,255 };
 };

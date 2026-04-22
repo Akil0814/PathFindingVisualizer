@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 project(PathFindingStatVisualizer)
 
@@ -9,12 +9,17 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 
-file(GLOB ASSETS "./assets")
-file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})
-
 set(SDL_LINK_LIBS)
 
-if(WIN32)
+if(EMSCRIPTEN)
+    message(STATUS "Configuring WebAssembly build with Emscripten")
+    add_compile_options(
+        "SHELL:-sUSE_SDL=2"
+        "SHELL:-sUSE_SDL_TTF=2"
+        "SHELL:-sUSE_SDL_IMAGE=2"
+        "SHELL:-sUSE_SDL_MIXER=2"
+    )
+elseif(WIN32)
     include_directories("thirdparty/include")
 
     if(MSVC)
@@ -64,7 +69,7 @@ set(PATH_FINDING_VISUALIZER_SOURCES
     "status.h"
 )
 
-if(WIN32)
+if(WIN32 AND NOT EMSCRIPTEN)
     enable_language(RC)
     configure_file(
         "${CMAKE_SOURCE_DIR}/assets/icon/app_icon.rc.in"
@@ -76,19 +81,45 @@ endif()
 
 add_executable(PathFindingVisualizer ${PATH_FINDING_VISUALIZER_SOURCES})
 
-if(WIN32)
+if(WIN32 AND NOT EMSCRIPTEN)
     set_target_properties(PathFindingVisualizer PROPERTIES
         WIN32_EXECUTABLE "$<CONFIG:Release>"
     )
 endif()
 
-target_link_libraries(PathFindingVisualizer 
-    applicationLib algorithmLib AframeworkLib imguiLib
+if(EMSCRIPTEN)
+    set_target_properties(PathFindingVisualizer PROPERTIES SUFFIX ".html")
+endif()
+
+target_link_libraries(
+    PathFindingVisualizer
+    applicationLib
+    algorithmLib
+    AframeworkLib
+    imguiLib
     ${SDL_LINK_LIBS}
 )
 
-add_custom_command(TARGET PathFindingVisualizer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:PathFindingVisualizer>/assets"
-)
+if(EMSCRIPTEN)
+    target_link_options(PathFindingVisualizer PRIVATE
+        "SHELL:-sUSE_SDL_TTF=2"
+        "SHELL:-sUSE_SDL_IMAGE=2"
+        "SHELL:-sUSE_SDL_MIXER=2"
+        "SHELL:--use-port=sdl2"
+        "SHELL:--use-port=sdl2_image:formats=png"
+        "SHELL:-sALLOW_MEMORY_GROWTH=1"
+        "SHELL:-sASSERTIONS=1"
+        "SHELL:-sNO_EXIT_RUNTIME=1"
+        "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
+        "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/web/shell.html"
+    )
+else()
+    file(GLOB ASSETS "./assets")
+    file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})
+
+    add_custom_command(TARGET PathFindingVisualizer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:PathFindingVisualizer>/assets"
+    )
+endif()

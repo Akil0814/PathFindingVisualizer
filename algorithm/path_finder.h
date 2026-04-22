@@ -86,7 +86,7 @@ protected:
     [[nodiscard]] bool rebuild_path(Point start, Point goal);
 
 	Board* _board = nullptr;
-    MoveMode _move_mode = MoveMode::FourWay;
+    MoveMode _move_mode = MoveMode::EightWay;
     DiagonalMovePolicy _diagonal_policy = DiagonalMovePolicy::BlockIfEitherSideBlocked;
 
 	bool _finished = false;

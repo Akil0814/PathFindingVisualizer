@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PathFindingVisualizer</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --page-bg: #0f1115;
+            --panel-bg: #171b22;
+            --panel-border: #2a313d;
+            --text: #e8edf5;
+            --muted: #95a1b2;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at top, rgba(91, 140, 255, 0.16), transparent 30%),
+                linear-gradient(180deg, #141923 0%, var(--page-bg) 55%);
+            color: var(--text);
+            font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+        }
+
+        main {
+            width: min(1200px, calc(100vw - 24px));
+            padding: 16px;
+        }
+
+        .chrome {
+            background: rgba(23, 27, 34, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--panel-border);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+        }
+
+        .title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .status {
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .canvas-wrap {
+            padding: 16px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 1080px;
+            margin: 0 auto;
+            border-radius: 12px;
+            background: #afafaf;
+            outline: none;
+        }
+
+        .footer {
+            padding: 0 18px 16px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section class="chrome">
+            <div class="toolbar">
+                <div class="title">PathFindingVisualizer Web</div>
+                <div class="status" id="status">Loading...</div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="canvas" width="1080" height="720" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+            </div>
+            <div class="footer">
+                Minimal WebAssembly build for GitHub Pages.
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const statusElement = document.getElementById("status");
+        const canvasElement = document.getElementById("canvas");
+        canvasElement.width = 1080;
+        canvasElement.height = 720;
+
+        var Module = {
+            canvas: canvasElement,
+            setStatus(text) {
+                statusElement.textContent = text || "Ready";
+            },
+            monitorRunDependencies(left) {
+                statusElement.textContent = left ? `Loading assets (${left})...` : "Ready";
+            }
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>

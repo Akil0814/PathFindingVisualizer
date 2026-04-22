@@ -1,4 +1,6 @@
 
 *build/
+build-web/
 .vs/
 out/
+site/

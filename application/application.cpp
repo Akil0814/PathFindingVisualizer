@@ -11,16 +11,43 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
-#include<SDL.h>
+
+#include <SDL.h>
 #include <SDL_ttf.h>//字体库
 #include <SDL_mixer.h>//音频库
 #include <SDL_image.h>//图像库
+
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/emscripten.h>
+#endif
 
 namespace
 {
 	bool s_imgui_initialized = false;
 	constexpr const char* kMoreInformationUrl = "https://akil0814.github.io/projects/PathFindingVisualizer/PathFindingVisualizer.html";
 	constexpr const char* kAboutAuthorUrl = "https://akil0814.github.io/index.html";
+
+	SDL_Renderer* create_renderer(SDL_Window* window)
+	{
+		if (window == nullptr)
+			return nullptr;
+
+		const Uint32 renderer_flags[] =
+		{
+			SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE,
+			SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE,
+			SDL_RENDERER_ACCELERATED,
+			0
+		};
+
+		for (const Uint32 flags : renderer_flags)
+		{
+			if (SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, flags))
+				return renderer;
+		}
+
+		return nullptr;
+	}
 
 	SDL_Rect make_centered_rect(SDL_Rect outer, SDL_Texture* texture, int padding = 8)
 	{
@@ -138,18 +165,25 @@ namespace
 
 Application::Application()
 {
-	init_assert(!SDL_Init(SDL_INIT_EVERYTHING), u8"SDL2 Error");
-	init_assert(IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG), u8"SDL_img Error");
-	init_assert(Mix_Init(MIX_INIT_MP3), u8"SDL_mixer Error");
+	const Uint32 sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER;
+	init_assert(SDL_Init(sdl_init_flags) == 0, u8"SDL2 Error");
+	int image_flags = IMG_INIT_PNG;
+#if !defined(__EMSCRIPTEN__)
+	image_flags |= IMG_INIT_JPG;
+#endif
+	init_assert((IMG_Init(image_flags) & image_flags) == image_flags, u8"SDL_img Error");
 	init_assert(!TTF_Init(), u8"SDL_ttf Error");
-	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+#if !defined(__EMSCRIPTEN__)
+	ensure_audio_ready();
+#endif
 	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-	_window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _width, _height, SDL_WINDOW_SHOWN);
+	_window = SDL_CreateWindow("PathFindingVisualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _width, _height, SDL_WINDOW_SHOWN);
 	init_assert(_window, u8"SDL_CreateWindow Error");
 
 	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE);//硬件加速 垂直同步 目标纹理
+	_renderer = _renderer != nullptr ? _renderer : create_renderer(_window);
 	init_assert(_renderer, u8"SDL_CreateRenderer Error");
 }
 
@@ -220,8 +254,11 @@ void Application::shutdown()
 		_window = nullptr;
 	}
 
-	Mix_CloseAudio();
-	Mix_Quit();
+	if (_audio_opened)
+	{
+		Mix_CloseAudio();
+		_audio_opened = false;
+	}
 	IMG_Quit();
 	TTF_Quit();
 	SDL_Quit();
@@ -235,11 +272,20 @@ Application* Application::instance()
 
 int Application::run(int argc, char** argv)
 {
+	(void)argc;
+	(void)argv;
 	Uint64 last_counter = SDL_GetPerformanceCounter();
 	const Uint64 counter_freq = SDL_GetPerformanceFrequency();//获取高性能计数器的频率
 	std::srand(static_cast<unsigned>(std::time(nullptr)));
 
 	init();
+	_counter_freq = SDL_GetPerformanceFrequency();
+	_last_counter = SDL_GetPerformanceCounter();
+
+#if defined(__EMSCRIPTEN__)
+	emscripten_set_main_loop_arg(&Application::main_loop_callback, this, 0, true);
+	return 0;
+#endif
 
 	while (_active)
 	{
@@ -271,8 +317,61 @@ int Application::run(int argc, char** argv)
 	return 0;
 }
 
+void Application::tick()
+{
+	while (SDL_PollEvent(&_event))
+	{
+		if (_event.type == SDL_QUIT)
+			_active = false;
+		on_input();
+	}
+
+	const Uint64 current_counter = SDL_GetPerformanceCounter();
+	double delta = 0.0;
+	if (_counter_freq != 0)
+		delta = static_cast<double>(current_counter - _last_counter) / static_cast<double>(_counter_freq);
+	_last_counter = current_counter;
+
+#if !defined(__EMSCRIPTEN__)
+	if (delta * 1000 < 1000.0 / FPS)
+		SDL_Delay(static_cast<Uint32>(1000.0 / FPS - delta * 1000));
+#endif
+
+	on_update(delta);
+
+	SDL_SetRenderDrawColor(_renderer, back_ground_color.r, back_ground_color.g, back_ground_color.b, back_ground_color.a);
+	SDL_RenderClear(_renderer);
+
+	on_render();
+
+	SDL_RenderPresent(_renderer);
+
+	if (!_active)
+	{
+#if defined(__EMSCRIPTEN__)
+		emscripten_cancel_main_loop();
+#endif
+		shutdown();
+	}
+}
+
+void Application::main_loop_callback(void* user_data)
+{
+	if (user_data == nullptr)
+		return;
+
+	static_cast<Application*>(user_data)->tick();
+}
+
 void Application::on_input()
 {
+	if (_event.type == SDL_MOUSEBUTTONDOWN ||
+		_event.type == SDL_MOUSEBUTTONUP ||
+		_event.type == SDL_KEYDOWN)
+	{
+		ensure_audio_ready();
+	}
+
 	clear_error_on_operation(_event);
 
 	if (_is_dev_mod && ImGui::GetCurrentContext() != nullptr)
@@ -401,32 +500,105 @@ void Application::init()
 
 	const std::string button_font_path = ResourcePath::asset("font/Frick.otf");
 	const std::string title_font_path = ResourcePath::asset("font/Frick.otf");
-	const std::string click_down_path = ResourcePath::asset("sound/click_down.wav");
-	const std::string click_up_path = ResourcePath::asset("sound/click_up.wav");
+	_click_down_path = ResourcePath::asset("sound/click_down.wav");
+	_click_up_path = ResourcePath::asset("sound/click_up.wav");
 	const std::string icon_path = ResourcePath::asset("icon/icon.png");
 
 	_button_font = TTF_OpenFont(button_font_path.c_str(), 22);
 	init_assert(_button_font != nullptr, TTF_GetError());
 	_title_font = TTF_OpenFont(title_font_path.c_str(), 16);
 	init_assert(_title_font != nullptr, TTF_GetError());
-	_button_sound_down = Mix_LoadWAV(click_down_path.c_str());
-	if (_button_sound_down == nullptr)
-		SDL_Log("Mix_LoadWAV failed for %s: %s", click_down_path.c_str(), Mix_GetError());
-	_button_sound_up = Mix_LoadWAV(click_up_path.c_str());
-	if (_button_sound_up == nullptr)
-		SDL_Log("Mix_LoadWAV failed for %s: %s", click_up_path.c_str(), Mix_GetError());
 
+	ensure_audio_ready();
+
+#if !defined(__EMSCRIPTEN__)
 	SDL_Surface* icon = IMG_Load(icon_path.c_str());
 	if (icon)
 	{
 		SDL_SetWindowIcon(_window, icon);
 		SDL_FreeSurface(icon);
 	}
+#endif
 
 	_board->init(_renderer, _title_font);
 	_number_renderer = std::make_unique<NumberRenderer>(_renderer, _title_font, SDL_Color{ 15, 15, 15, 255 });
 
 	init_button();
+}
+
+bool Application::ensure_audio_ready()
+{
+	if (_audio_failed)
+		return false;
+
+	if (!_audio_opened)
+	{
+#if defined(__EMSCRIPTEN__)
+		if ((SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) == 0 &&
+			SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+		{
+			SDL_Log("SDL_InitSubSystem(SDL_INIT_AUDIO) failed: %s", SDL_GetError());
+			_audio_failed = true;
+			return false;
+		}
+#endif
+
+		if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) != 0)
+		{
+			SDL_Log("Mix_OpenAudio failed: %s", Mix_GetError());
+			return false;
+		}
+
+		_audio_opened = true;
+	}
+
+	if (_audio_assets_loaded)
+		return true;
+
+	if (_click_down_path.empty() || _click_up_path.empty())
+		return _audio_opened;
+
+	_button_sound_down = Mix_LoadWAV(_click_down_path.c_str());
+	if (_button_sound_down == nullptr)
+	{
+		SDL_Log("Mix_LoadWAV failed for %s: %s", _click_down_path.c_str(), Mix_GetError());
+		_audio_failed = true;
+		return false;
+	}
+
+	_button_sound_up = Mix_LoadWAV(_click_up_path.c_str());
+	if (_button_sound_up == nullptr)
+	{
+		SDL_Log("Mix_LoadWAV failed for %s: %s", _click_up_path.c_str(), Mix_GetError());
+		Mix_FreeChunk(_button_sound_down);
+		_button_sound_down = nullptr;
+		_audio_failed = true;
+		return false;
+	}
+
+	_audio_assets_loaded = true;
+	refresh_button_sound_effects();
+	return true;
+}
+
+void Application::refresh_button_sound_effects()
+{
+	auto attach_to_manager = [&](ButtonManager* manager)
+	{
+		if (manager == nullptr)
+			return;
+
+		for (std::size_t i = 0; i < manager->size(); ++i)
+		{
+			if (Button* button = manager->get_button(i))
+				button->set_sound_effects(_button_sound_down, _button_sound_up);
+		}
+	};
+
+	attach_to_manager(_button_manager.get());
+	attach_to_manager(_edit_button_manager.get());
+	attach_to_manager(_alg_button_manager.get());
+	attach_to_manager(_dev_button_manager.get());
 }
 
 void Application::render_imgui()
