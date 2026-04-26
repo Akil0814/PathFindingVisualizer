@@ -1,5 +1,8 @@
 # PathFindingVisualizer / 寻路算法可视化
 
+[Live Web Demo](https://akil0814.github.io/projects/PathFindingVisualizer/web/) | 
+[演示网页](https://akil0814.github.io/projects/PathFindingVisualizer/web/)
+
 [English README](README-EN.md) | [中文详细说明](README-CN.md)
 
 `PathFindingVisualizer` is a C++17 desktop path-finding visualizer built with SDL2 and Dear ImGui. It supports interactive grid editing, step-by-step execution, auto-run, rollback, and developer-oriented debugging tools.
